@@ -18,6 +18,8 @@ import {
 } from "firebase/firestore";
 import { getFirebaseDb } from "@/lib/firebase";
 
+const TYPE_EMOJI = { camera: "\u{1F4F7}", tondela: "\u{1F9F8}", card: "\u{1F4B3}" };
+
 export default function ItemDetailPage() {
     const { user, userData, loading } = useAuth();
     const params = useParams();
@@ -33,7 +35,6 @@ export default function ItemDetailPage() {
     useEffect(() => {
         if (!user || !params.id) return;
 
-        // Listen to item changes
         const unsubItem = onSnapshot(doc(getFirebaseDb(), "items", params.id), (docSnap) => {
             if (docSnap.exists()) {
                 setItem({ id: docSnap.id, ...docSnap.data() });
@@ -44,14 +45,12 @@ export default function ItemDetailPage() {
             setItemLoading(false);
         });
 
-        // Listen to transfer history (simple query — sort client-side to avoid composite index)
         const q = query(
             collection(getFirebaseDb(), "transfers"),
             where("itemId", "==", params.id)
         );
         const unsubTransfers = onSnapshot(q, (snapshot) => {
             const docs = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-            // Sort by timestamp descending (newest first)
             docs.sort((a, b) => {
                 const ta = a.timestamp?.toMillis?.() || 0;
                 const tb = b.timestamp?.toMillis?.() || 0;
@@ -83,6 +82,7 @@ export default function ItemDetailPage() {
             await addDoc(collection(getFirebaseDb(), "transfers"), {
                 itemId: item.id,
                 itemName: item.name,
+                itemType: item.type,
                 fromUserId: null,
                 fromUserName: "Office",
                 toUserId: user.uid,
@@ -111,6 +111,7 @@ export default function ItemDetailPage() {
             await addDoc(collection(getFirebaseDb(), "transfers"), {
                 itemId: item.id,
                 itemName: item.name,
+                itemType: item.type,
                 fromUserId: user.uid,
                 fromUserName: userData.name,
                 toUserId: null,
@@ -139,6 +140,7 @@ export default function ItemDetailPage() {
             await addDoc(collection(getFirebaseDb(), "transfers"), {
                 itemId: item.id,
                 itemName: item.name,
+                itemType: item.type,
                 fromUserId: user.uid,
                 fromUserName: userData.name,
                 toUserId: toUser.id,
@@ -175,9 +177,9 @@ export default function ItemDetailPage() {
         return (
             <div className="min-h-screen">
                 <Navbar />
-                <div className="max-w-4xl mx-auto px-4 py-16 text-center">
-                    <p className="text-6xl mb-4">🔍</p>
-                    <h2 className="text-2xl font-bold mb-2">Item not found</h2>
+                <div className="max-w-4xl mx-auto px-5 py-20 text-center">
+                    <p className="text-5xl mb-4 opacity-40">{"\u{1F50D}"}</p>
+                    <h2 className="text-xl font-bold mb-2">Item not found</h2>
                     <p className="text-[var(--text-muted)]">
                         This item may have been removed.
                     </p>
@@ -188,8 +190,6 @@ export default function ItemDetailPage() {
 
     const isInOffice = item.status === "office";
     const isCurrentHolder = item.currentHolder === user.uid;
-
-    const TYPE_EMOJI = { camera: "📷", tondela: "🧸", card: "💳" };
 
     const formatDate = (timestamp) => {
         if (!timestamp) return "";
@@ -208,7 +208,7 @@ export default function ItemDetailPage() {
             case "pickup":
                 return (
                     <>
-                        <span className="font-semibold text-[var(--status-office)]">
+                        <span className="font-semibold text-[var(--text-primary)]">
                             {transfer.toUserName}
                         </span>{" "}
                         picked up from office
@@ -217,7 +217,7 @@ export default function ItemDetailPage() {
             case "return":
                 return (
                     <>
-                        <span className="font-semibold text-[var(--esn-orange)]">
+                        <span className="font-semibold text-[var(--text-primary)]">
                             {transfer.fromUserName}
                         </span>{" "}
                         returned to office
@@ -226,11 +226,11 @@ export default function ItemDetailPage() {
             case "transfer":
                 return (
                     <>
-                        <span className="font-semibold text-[var(--esn-cyan)]">
+                        <span className="font-semibold text-[var(--text-primary)]">
                             {transfer.fromUserName}
                         </span>{" "}
-                        → {" "}
-                        <span className="font-semibold text-[var(--esn-cyan)]">
+                        {"\u2192"}{" "}
+                        <span className="font-semibold text-[var(--text-primary)]">
                             {transfer.toUserName}
                         </span>
                     </>
@@ -240,14 +240,23 @@ export default function ItemDetailPage() {
         }
     };
 
+    const getActionDotColor = (action) => {
+        switch (action) {
+            case "pickup": return "bg-[var(--status-office)]";
+            case "return": return "bg-[var(--esn-orange)]";
+            case "transfer": return "bg-[var(--esn-cyan)]";
+            default: return "bg-[var(--text-muted)]";
+        }
+    };
+
     return (
         <div className="min-h-screen">
             <Navbar />
-            <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <main className="max-w-4xl mx-auto px-4 sm:px-8 py-5 sm:py-8">
                 {/* Back button */}
                 <button
                     onClick={() => router.push("/")}
-                    className="flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors mb-6 text-sm"
+                    className="flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors mb-5 sm:mb-8 text-[14px] font-medium"
                 >
                     <svg
                         width="16"
@@ -261,32 +270,31 @@ export default function ItemDetailPage() {
                     >
                         <polyline points="15 18 9 12 15 6" />
                     </svg>
-                    Back to Dashboard
+                    Back
                 </button>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    {/* Left: Item info + Actions */}
-                    <div className="space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-5 gap-5 sm:gap-8">
+                    {/* Left: Item info + Actions (3 cols) */}
+                    <div className="lg:col-span-3 space-y-4 sm:space-y-6">
                         {/* Item Card */}
-                        <div className="glass-card overflow-hidden cursor-default hover:transform-none">
+                        <div className="card overflow-hidden">
                             {item.photoURL ? (
-                                <img src={item.photoURL} alt={item.name} className="item-image" />
+                                <img src={item.photoURL} alt={item.name} className="w-full h-48 sm:h-56 object-cover" />
                             ) : (
-                                <div className="item-image-placeholder text-5xl">
-                                    {TYPE_EMOJI[item.type] || "📦"}
+                                <div className="w-full h-48 sm:h-56 flex items-center justify-center bg-[var(--bg-secondary)] text-5xl sm:text-6xl">
+                                    {TYPE_EMOJI[item.type] || "\u{1F4E6}"}
                                 </div>
                             )}
-                            <div className="p-6 space-y-4">
-                                <div className="flex items-start justify-between">
+                            <div className="p-4 sm:p-6 space-y-4 sm:space-y-5">
+                                <div className="flex items-start justify-between gap-4">
                                     <div>
-                                        <h1 className="text-2xl font-bold">{item.name}</h1>
-                                        <span className={`type-badge mt-1 type-${item.type}`}>
+                                        <h1 className="text-xl sm:text-2xl font-bold tracking-tight">{item.name}</h1>
+                                        <span className={`type-badge mt-2 type-${item.type}`}>
                                             {TYPE_EMOJI[item.type]} {item.type}
                                         </span>
                                     </div>
                                     <div
-                                        className={`status-badge ${isInOffice ? "status-office" : "status-out"
-                                            }`}
+                                        className={`status-badge flex-shrink-0 ${isInOffice ? "status-office" : "status-out"}`}
                                     >
                                         <span
                                             className={`status-dot ${isInOffice ? "office" : "out"}`}
@@ -296,11 +304,11 @@ export default function ItemDetailPage() {
                                 </div>
 
                                 {!isInOffice && (
-                                    <div className="p-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-color)]">
-                                        <p className="text-sm text-[var(--text-muted)]">
+                                    <div className="p-4 rounded-xl bg-[var(--bg-secondary)]">
+                                        <p className="text-[13px] text-[var(--text-muted)]">
                                             Currently with
                                         </p>
-                                        <p className="font-semibold text-lg">
+                                        <p className="font-semibold text-lg mt-0.5">
                                             {item.currentHolderName || "Unknown"}
                                         </p>
                                     </div>
@@ -309,12 +317,11 @@ export default function ItemDetailPage() {
                         </div>
 
                         {/* Actions */}
-                        <div className="glass-card p-6 space-y-4 cursor-default hover:transform-none">
-                            <h2 className="font-semibold text-lg">Actions</h2>
+                        <div className="card p-4 sm:p-6 space-y-4 sm:space-y-5">
+                            <h2 className="font-semibold text-base sm:text-lg">Actions</h2>
 
-                            {/* Event name input */}
                             <div>
-                                <label className="text-sm text-[var(--text-muted)] mb-1 block">
+                                <label className="text-[13px] font-medium text-[var(--text-secondary)] mb-1.5 block">
                                     Event name (optional)
                                 </label>
                                 <input
@@ -326,14 +333,14 @@ export default function ItemDetailPage() {
                                 />
                             </div>
 
-                            <div className="space-y-2">
+                            <div className="space-y-3">
                                 {isInOffice && (
                                     <button
                                         onClick={handlePickup}
                                         disabled={actionLoading}
                                         className="btn-action pickup"
                                     >
-                                        <span className="text-lg">📤</span>
+                                        <span className="text-lg">{"\u{1F4E4}"}</span>
                                         Pick up from office
                                         {actionLoading && (
                                             <span className="ml-auto spinner !w-4 !h-4 !border-2"></span>
@@ -348,7 +355,7 @@ export default function ItemDetailPage() {
                                             disabled={actionLoading}
                                             className="btn-action return-item"
                                         >
-                                            <span className="text-lg">📥</span>
+                                            <span className="text-lg">{"\u{1F4E5}"}</span>
                                             Return to office
                                             {actionLoading && (
                                                 <span className="ml-auto spinner !w-4 !h-4 !border-2"></span>
@@ -359,14 +366,14 @@ export default function ItemDetailPage() {
                                             disabled={actionLoading}
                                             className="btn-action transfer"
                                         >
-                                            <span className="text-lg">🤝</span>
+                                            <span className="text-lg">{"\u{1F91D}"}</span>
                                             Pass to someone
                                         </button>
                                     </>
                                 )}
 
                                 {!isInOffice && !isCurrentHolder && (
-                                    <div className="text-sm text-[var(--text-muted)] p-4 rounded-xl bg-[var(--bg-secondary)] text-center">
+                                    <div className="text-[14px] text-[var(--text-muted)] p-5 rounded-xl bg-[var(--bg-secondary)] text-center">
                                         Only{" "}
                                         <span className="font-medium text-[var(--text-primary)]">
                                             {item.currentHolderName}
@@ -378,48 +385,52 @@ export default function ItemDetailPage() {
                         </div>
                     </div>
 
-                    {/* Right: Transfer History */}
-                    <div className="glass-card p-6 cursor-default hover:transform-none">
-                        <h2 className="font-semibold text-lg mb-6">Transfer History</h2>
+                    {/* Right: Transfer History (2 cols) */}
+                    <div className="lg:col-span-2">
+                        <div className="card p-4 sm:p-6 lg:sticky lg:top-20">
+                            <h2 className="font-semibold text-base sm:text-lg mb-4 sm:mb-6">Transfer History</h2>
 
-                        {transfersLoading ? (
-                            <div className="flex justify-center py-10">
-                                <div className="spinner"></div>
-                            </div>
-                        ) : transfers.length === 0 ? (
-                            <div className="text-center py-10">
-                                <p className="text-4xl mb-3">📋</p>
-                                <p className="text-[var(--text-muted)]">
-                                    No transfers yet
-                                </p>
-                            </div>
-                        ) : (
-                            <div className="space-y-0">
-                                {transfers.map((transfer) => (
-                                    <div key={transfer.id} className={`timeline-item`}>
+                            {transfersLoading ? (
+                                <div className="flex justify-center py-12">
+                                    <div className="spinner"></div>
+                                </div>
+                            ) : transfers.length === 0 ? (
+                                <div className="text-center py-12">
+                                    <p className="text-4xl mb-3 opacity-40">{"\u{1F4CB}"}</p>
+                                    <p className="text-sm text-[var(--text-muted)]">
+                                        No transfers yet
+                                    </p>
+                                </div>
+                            ) : (
+                                <div>
+                                    {transfers.map((transfer, index) => (
                                         <div
-                                            className={`timeline-dot ${transfer.action}`}
-                                        ></div>
-                                        <div>
-                                            <p className="text-sm">{getActionText(transfer)}</p>
-                                            {transfer.eventName && (
-                                                <p className="text-xs mt-1 text-[var(--esn-magenta)]">
-                                                    🎉 {transfer.eventName}
+                                            key={transfer.id}
+                                            className={`flex gap-3.5 py-4 ${
+                                                index !== transfers.length - 1 ? "border-b border-[var(--border-subtle)]" : ""
+                                            }`}
+                                        >
+                                            <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${getActionDotColor(transfer.action)}`} />
+                                            <div>
+                                                <p className="text-[13px] text-[var(--text-secondary)] leading-relaxed">{getActionText(transfer)}</p>
+                                                {transfer.eventName && (
+                                                    <p className="text-xs mt-1 text-[var(--esn-magenta)] font-medium">
+                                                        {transfer.eventName}
+                                                    </p>
+                                                )}
+                                                <p className="text-xs text-[var(--text-muted)] mt-1">
+                                                    {formatDate(transfer.timestamp)}
                                                 </p>
-                                            )}
-                                            <p className="text-xs text-[var(--text-muted)] mt-1">
-                                                {formatDate(transfer.timestamp)}
-                                            </p>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </main>
 
-            {/* Transfer Modal */}
             {showTransferModal && (
                 <TransferModal
                     onClose={() => setShowTransferModal(false)}

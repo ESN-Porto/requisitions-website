@@ -31,20 +31,13 @@ export default function TransferModal({ onClose, onTransfer, currentUserId }) {
     return (
         <div className="modal-overlay" onClick={onClose}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-                <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-bold">Pass to someone</h2>
+                <div className="flex items-center justify-between mb-5">
+                    <h2 className="text-lg font-semibold">Pass to someone</h2>
                     <button
                         onClick={onClose}
-                        className="p-1 rounded-lg hover:bg-[var(--bg-card)] transition-colors text-[var(--text-muted)]"
+                        className="p-1.5 rounded-lg hover:bg-[var(--bg-secondary)] transition-colors text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                     >
-                        <svg
-                            width="20"
-                            height="20"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                        >
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <line x1="18" y1="6" x2="6" y2="18" />
                             <line x1="6" y1="6" x2="18" y2="18" />
                         </svg>
@@ -60,40 +53,35 @@ export default function TransferModal({ onClose, onTransfer, currentUserId }) {
                     autoFocus
                 />
 
-                <div className="max-h-64 overflow-y-auto space-y-1">
+                <div className="max-h-64 overflow-y-auto -mx-2 px-2">
                     {loading ? (
                         <div className="flex justify-center py-8">
-                            <div className="spinner !w-6 !h-6"></div>
+                            <div className="spinner"></div>
                         </div>
                     ) : filteredUsers.length === 0 ? (
-                        <p className="text-center text-[var(--text-muted)] py-8 text-sm">
-                            No members found
-                        </p>
+                        <p className="text-center text-sm text-[var(--text-muted)] py-8">No members found</p>
                     ) : (
-                        filteredUsers.map((u) => (
-                            <button
-                                key={u.id}
-                                onClick={() => onTransfer(u)}
-                                className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-[var(--bg-card)] transition-colors text-left"
-                            >
-                                {u.photoURL ? (
-                                    <img
-                                        src={u.photoURL}
-                                        alt={u.name}
-                                        className="w-9 h-9 rounded-full"
-                                        referrerPolicy="no-referrer"
-                                    />
-                                ) : (
-                                    <div className="w-9 h-9 rounded-full bg-[var(--bg-card-hover)] flex items-center justify-center text-sm font-semibold">
-                                        {u.name?.[0]}
+                        <div className="space-y-1">
+                            {filteredUsers.map((u) => (
+                                <button
+                                    key={u.id}
+                                    onClick={() => onTransfer(u)}
+                                    className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-[var(--bg-secondary)] transition-colors text-left"
+                                >
+                                    {u.photoURL ? (
+                                        <img src={u.photoURL} alt={u.name} className="w-9 h-9 rounded-full ring-1 ring-black/5" referrerPolicy="no-referrer" />
+                                    ) : (
+                                        <div className="w-9 h-9 rounded-full bg-[var(--bg-secondary)] flex items-center justify-center text-sm font-semibold text-[var(--text-secondary)]">
+                                            {u.name?.[0]}
+                                        </div>
+                                    )}
+                                    <div>
+                                        <p className="text-sm font-medium text-[var(--text-primary)]">{u.name}</p>
+                                        <p className="text-xs text-[var(--text-muted)]">{u.email}</p>
                                     </div>
-                                )}
-                                <div>
-                                    <p className="text-sm font-medium">{u.name}</p>
-                                    <p className="text-xs text-[var(--text-muted)]">{u.email}</p>
-                                </div>
-                            </button>
-                        ))
+                                </button>
+                            ))}
+                        </div>
                     )}
                 </div>
             </div>

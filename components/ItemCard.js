@@ -3,9 +3,9 @@
 import Link from "next/link";
 
 const TYPE_EMOJI = {
-    camera: "📷",
-    tondela: "🧸",
-    card: "💳",
+    camera: "\u{1F4F7}",
+    tondela: "\u{1F9F8}",
+    card: "\u{1F4B3}",
 };
 
 export default function ItemCard({ item }) {
@@ -13,34 +13,28 @@ export default function ItemCard({ item }) {
 
     return (
         <Link href={`/item/${item.id}`}>
-            <div className="glass-card overflow-hidden cursor-pointer group">
+            <div className="card card-interactive overflow-hidden">
                 {/* Image */}
                 {item.photoURL ? (
                     <img
                         src={item.photoURL}
                         alt={item.name}
-                        className="item-image group-hover:scale-105 transition-transform duration-500"
+                        className="item-image"
                     />
                 ) : (
                     <div className="item-image-placeholder">
-                        {TYPE_EMOJI[item.type] || "📦"}
+                        {TYPE_EMOJI[item.type] || "\u{1F4E6}"}
                     </div>
                 )}
 
                 {/* Content */}
-                <div className="p-5 space-y-3">
-                    <div className="flex items-start justify-between">
-                        <div>
-                            <h3 className="font-semibold text-lg leading-tight">
-                                {item.name}
-                            </h3>
-                            <span className={`type-badge mt-1 type-${item.type}`}>
-                                {TYPE_EMOJI[item.type]} {item.type}
-                            </span>
-                        </div>
+                <div className="p-5">
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                        <h3 className="font-semibold text-[15px] text-[var(--text-primary)] leading-tight">
+                            {item.name}
+                        </h3>
                         <div
-                            className={`status-badge ${isInOffice ? "status-office" : "status-out"
-                                }`}
+                            className={`status-badge flex-shrink-0 ${isInOffice ? "status-office" : "status-out"}`}
                         >
                             <span
                                 className={`status-dot ${isInOffice ? "office" : "out"}`}
@@ -49,21 +43,22 @@ export default function ItemCard({ item }) {
                         </div>
                     </div>
 
-                    {/* Holder info */}
-                    <div className="flex items-center gap-2 text-sm">
+                    <span className={`type-badge type-${item.type}`}>
+                        {TYPE_EMOJI[item.type]} {item.type}
+                    </span>
+
+                    <p className="text-[13px] text-[var(--text-secondary)] mt-3">
                         {isInOffice ? (
-                            <span className="text-[var(--text-muted)]">
-                                Available in the office
-                            </span>
+                            "Available in the office"
                         ) : (
-                            <span className="text-[var(--text-secondary)]">
+                            <>
                                 With{" "}
                                 <span className="font-medium text-[var(--text-primary)]">
                                     {item.currentHolderName || "Unknown"}
                                 </span>
-                            </span>
+                            </>
                         )}
-                    </div>
+                    </p>
                 </div>
             </div>
         </Link>

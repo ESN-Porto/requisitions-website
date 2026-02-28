@@ -1,23 +1,31 @@
-import "./globals.css";
+import { Inter } from "next/font/google";
 import { AuthProvider } from "@/contexts/AuthContext";
+import "./globals.css";
+
+const inter = Inter({
+    subsets: ["latin"],
+    display: "swap",
+    variable: "--font-inter",
+});
 
 export const metadata = {
-  title: "ESN Porto Item Tracker",
-  description: "Track who has ESN Porto's shared items — cameras, Tondelas, and cards.",
+    title: "Item Tracker — ESN Porto",
+    description:
+        "Track who has the cameras, Tondelas, and cards. ESN Porto equipment management.",
+    icons: {
+        icon: "/assets/favicon.png",
+    },
 };
 
 export default function RootLayout({ children }) {
-  return (
-    <html lang="en">
-      <head>
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-          rel="stylesheet"
-        />
-      </head>
-      <body className="antialiased min-h-screen">
-        <AuthProvider>{children}</AuthProvider>
-      </body>
-    </html>
-  );
+    return (
+        <html lang="en" className={inter.variable} suppressHydrationWarning>
+            <body
+                style={{ fontFamily: "var(--font-inter), system-ui, sans-serif" }}
+                suppressHydrationWarning
+            >
+                <AuthProvider>{children}</AuthProvider>
+            </body>
+        </html>
+    );
 }

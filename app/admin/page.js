@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/Navbar";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { QRCodeSVG } from "qrcode.react";
 import {
     collection,
     query,
@@ -26,6 +27,7 @@ export default function AdminPage() {
     const [items, setItems] = useState([]);
     const [users, setUsers] = useState([]);
     const [showItemForm, setShowItemForm] = useState(false);
+    const [showQRForItem, setShowQRForItem] = useState(null);
     const [editingItem, setEditingItem] = useState(null);
     const [formData, setFormData] = useState({ name: "", type: "camera" });
     const [imageFile, setImageFile] = useState(null);
@@ -198,6 +200,7 @@ export default function AdminPage() {
                                             </div>
                                         </div>
                                         <div className="flex gap-1.5 sm:gap-2 flex-shrink-0">
+                                            <button onClick={() => setShowQRForItem(item)} className="btn-secondary !py-1.5 !px-2.5 sm:!py-2 sm:!px-3.5 !text-[12px] sm:!text-[13px]">QR</button>
                                             <button onClick={() => openEditForm(item)} className="btn-secondary !py-1.5 !px-2.5 sm:!py-2 sm:!px-3.5 !text-[12px] sm:!text-[13px]">Edit</button>
                                             {deleteConfirm === item.id ? (
                                                 <>
@@ -320,6 +323,46 @@ export default function AdminPage() {
                                     <button onClick={() => setShowItemForm(false)} className="btn-secondary">Cancel</button>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* QR Code Modal */}
+                {showQRForItem && (
+                    <div className="modal-overlay" onClick={() => setShowQRForItem(null)}>
+                        <div className="modal-content text-center" onClick={(e) => e.stopPropagation()}>
+                            <div className="flex items-center justify-between mb-6">
+                                <h2 className="text-lg font-semibold text-left">QR Code: {showQRForItem.name}</h2>
+                                <button
+                                    onClick={() => setShowQRForItem(null)}
+                                    className="p-1.5 rounded-lg hover:bg-[var(--bg-secondary)] transition-colors text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                                >
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <line x1="18" y1="6" x2="6" y2="18" />
+                                        <line x1="6" y1="6" x2="18" y2="18" />
+                                    </svg>
+                                </button>
+                            </div>
+                            
+                            <div className="flex flex-col items-center justify-center p-6 bg-white rounded-xl mb-4 border border-[var(--border-color)]">
+                                <QRCodeSVG 
+                                    value={`${typeof window !== 'undefined' ? window.location.origin : ''}/item/${showQRForItem.id}`} 
+                                    size={200} 
+                                    level="H"
+                                    includeMargin={true}
+                                />
+                            </div>
+                            
+                            <p className="text-[13px] text-[var(--text-muted)] mb-4">
+                                Print this code and attach it to the physical item. Anyone who scans it will be taken directly to the item's action page.
+                            </p>
+                            
+                            <button 
+                                onClick={() => window.print()} 
+                                className="btn-primary w-full"
+                            >
+                                Print Page
+                            </button>
                         </div>
                     </div>
                 )}

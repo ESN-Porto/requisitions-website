@@ -36,7 +36,7 @@ export default function Navbar() {
                             priority
                         />
                         <span className="font-semibold text-[15px] text-[var(--text-primary)]">
-                            Item Tracker
+                            Requisitions Tracker
                         </span>
                     </Link>
 

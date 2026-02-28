@@ -74,7 +74,7 @@ export default function HomePage() {
               Item Tracker
             </h1>
             <p className="text-[15px] text-[var(--text-muted)] mt-2">
-              Keep track of your team's requisitions.
+              Keep track of the section's requisitions.
             </p>
             <button onClick={signInWithGoogle} className="google-btn w-full justify-center mt-8">
               <svg width="18" height="18" viewBox="0 0 48 48">

@@ -21,7 +21,7 @@ import { getFirebaseDb } from "@/lib/firebase";
 const TYPE_EMOJI = { camera: "\u{1F4F7}", tondela: "\u{1F9F8}", card: "\u{1F4B3}" };
 
 export default function ItemDetailPage() {
-    const { user, userData, loading } = useAuth();
+    const { user, userData, loading, signInWithGoogle } = useAuth();
     const params = useParams();
     const router = useRouter();
     const [item, setItem] = useState(null);
@@ -34,7 +34,7 @@ export default function ItemDetailPage() {
     const [eventName, setEventName] = useState("");
 
     useEffect(() => {
-        if (!user || !params.id) return;
+        if (!params.id) return;
 
         // Fetch all users for photo lookup
         getDocs(collection(getFirebaseDb(), "users")).then((snap) => {
@@ -71,10 +71,10 @@ export default function ItemDetailPage() {
             unsubItem();
             unsubTransfers();
         };
-    }, [user, params.id]);
+    }, [params.id]);
 
     const handlePickup = async () => {
-        if (!item || actionLoading) return;
+        if (!user || !item || actionLoading) return;
         setActionLoading(true);
         try {
             await updateDoc(doc(getFirebaseDb(), "items", item.id), {
@@ -97,7 +97,7 @@ export default function ItemDetailPage() {
     };
 
     const handleReturn = async () => {
-        if (!item || actionLoading) return;
+        if (!user || !item || actionLoading) return;
         setActionLoading(true);
         try {
             await updateDoc(doc(getFirebaseDb(), "items", item.id), {
@@ -120,7 +120,7 @@ export default function ItemDetailPage() {
     };
 
     const handleTransfer = async (toUser) => {
-        if (!item || actionLoading) return;
+        if (!user || !item || actionLoading) return;
         setActionLoading(true);
         try {
             await updateDoc(doc(getFirebaseDb(), "items", item.id), {
@@ -152,8 +152,6 @@ export default function ItemDetailPage() {
         );
     }
 
-    if (!user) { router.push("/"); return null; }
-
     if (!item) {
         return (
             <div className="min-h-screen">
@@ -168,7 +166,7 @@ export default function ItemDetailPage() {
     }
 
     const isInOffice = item.status === "office";
-    const isCurrentHolder = item.currentHolder === user.uid;
+    const isCurrentHolder = user ? item.currentHolder === user.uid : false;
     const holderPhoto = item.currentHolderPhoto || usersMap[item.currentHolder]?.photoURL;
 
     const formatDate = (timestamp) => {
@@ -252,31 +250,39 @@ export default function ItemDetailPage() {
                                 </div>
                             </div>
 
-                            {/* Event name — required */}
-                            <div className="mb-4">
-                                <label className="text-[13px] font-medium text-[var(--text-secondary)] mb-1.5 block">Event name</label>
-                                <input
-                                    type="text"
-                                    placeholder="e.g. Erasmus Welcome Week"
-                                    value={eventName}
-                                    onChange={(e) => setEventName(e.target.value)}
-                                    className="input-field !text-[14px]"
-                                />
-                            </div>
+                            {!user ? (
+                                <div className="mt-4 text-[14px] text-[var(--text-muted)] p-4 rounded-xl bg-[var(--bg-secondary)] text-center">
+                                    Please <button onClick={signInWithGoogle} className="font-medium text-[var(--text-primary)] underline">sign in</button> to pick up this item.
+                                </div>
+                            ) : (
+                                <>
+                                    {/* Event name — required */}
+                                    <div className="mb-4">
+                                        <label className="text-[13px] font-medium text-[var(--text-secondary)] mb-1.5 block">Event name</label>
+                                        <input
+                                            type="text"
+                                            placeholder="e.g. Erasmus Welcome Week"
+                                            value={eventName}
+                                            onChange={(e) => setEventName(e.target.value)}
+                                            className="input-field !text-[14px]"
+                                        />
+                                    </div>
 
-                            <button
-                                onClick={handlePickup}
-                                disabled={actionLoading || !eventName.trim()}
-                                className="btn-action pickup disabled:opacity-40 disabled:cursor-not-allowed"
-                            >
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                                    <polyline points="17 8 12 3 7 8" />
-                                    <line x1="12" y1="3" x2="12" y2="15" />
-                                </svg>
-                                Pick up from office
-                                {actionLoading && <span className="ml-auto spinner !w-4 !h-4 !border-2"></span>}
-                            </button>
+                                    <button
+                                        onClick={handlePickup}
+                                        disabled={actionLoading || !eventName.trim()}
+                                        className="btn-action pickup disabled:opacity-40 disabled:cursor-not-allowed"
+                                    >
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                            <polyline points="17 8 12 3 7 8" />
+                                            <line x1="12" y1="3" x2="12" y2="15" />
+                                        </svg>
+                                        Pick up from office
+                                        {actionLoading && <span className="ml-auto spinner !w-4 !h-4 !border-2"></span>}
+                                    </button>
+                                </>
+                            )}
                         </div>
                     ) : (
                         /* Checked out to someone */
@@ -432,7 +438,7 @@ export default function ItemDetailPage() {
                 <TransferModal
                     onClose={() => setShowTransferModal(false)}
                     onTransfer={handleTransfer}
-                    currentUserId={user.uid}
+                    currentUserId={user?.uid}
                 />
             )}
         </div>

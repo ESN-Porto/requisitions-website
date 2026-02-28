@@ -13,14 +13,12 @@ const TYPE_EMOJI = {
 };
 
 export default function HistoryPage() {
-    const { user, loading } = useAuth();
+    const { loading } = useAuth();
     const [transfers, setTransfers] = useState([]);
     const [transfersLoading, setTransfersLoading] = useState(true);
     const [filter, setFilter] = useState("all");
 
     useEffect(() => {
-        if (!user) return;
-
         const q = query(
             collection(getFirebaseDb(), "transfers"),
             orderBy("timestamp", "desc"),
@@ -37,7 +35,7 @@ export default function HistoryPage() {
         });
 
         return () => unsubscribe();
-    }, [user]);
+    }, []);
 
     if (loading) {
         return (
@@ -45,21 +43,6 @@ export default function HistoryPage() {
                 <Navbar />
                 <div className="flex justify-center py-32">
                     <div className="spinner"></div>
-                </div>
-            </div>
-        );
-    }
-
-    if (!user) {
-        return (
-            <div className="min-h-screen">
-                <Navbar />
-                <div className="max-w-4xl mx-auto px-5 py-20 text-center">
-                    <p className="text-5xl mb-4 opacity-40">{"\u{1F512}"}</p>
-                    <h2 className="text-lg font-semibold mb-1">Sign in required</h2>
-                    <p className="text-[15px] text-[var(--text-muted)]">
-                        Please sign in to view activity history.
-                    </p>
                 </div>
             </div>
         );
@@ -122,15 +105,6 @@ export default function HistoryPage() {
                 );
             default:
                 return "Unknown action";
-        }
-    };
-
-    const getActionIcon = (action) => {
-        switch (action) {
-            case "pickup": return "\u{1F4E4}";
-            case "return": return "\u{1F4E5}";
-            case "transfer": return "\u{1F91D}";
-            default: return "\u{1F4CB}";
         }
     };
 

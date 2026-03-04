@@ -20,7 +20,7 @@ import {
 import { getFirebaseDb } from "@/lib/firebase";
 
 export default function ItemDetailPage() {
-    const { user, userData, loading, signInWithGoogle } = useAuth();
+    const { user, userData, loading, signInWithGoogle, isAdmin } = useAuth();
     const params = useParams();
     const router = useRouter();
     const [item, setItem] = useState(null);
@@ -32,6 +32,8 @@ export default function ItemDetailPage() {
     const [showTransferModal, setShowTransferModal] = useState(false);
     const [actionLoading, setActionLoading] = useState(false);
     const [eventName, setEventName] = useState("");
+    const [adminOverrideLoading, setAdminOverrideLoading] = useState(false);
+    const [showAdminTransferModal, setShowAdminTransferModal] = useState(false);
 
     useEffect(() => {
         if (!params.id) return;
@@ -147,6 +149,55 @@ export default function ItemDetailPage() {
             setShowTransferModal(false);
         } catch (e) { console.error("Transfer error:", e); }
         setActionLoading(false);
+    };
+
+    const handleAdminReturn = async () => {
+        if (!item || adminOverrideLoading) return;
+        setAdminOverrideLoading(true);
+        try {
+            await updateDoc(doc(getFirebaseDb(), "items", item.id), {
+                status: "office",
+                currentHolder: null,
+                currentHolderName: null,
+                currentHolderPhoto: null,
+                updatedAt: serverTimestamp(),
+            });
+            await addDoc(collection(getFirebaseDb(), "transfers"), {
+                itemId: item.id, itemName: item.name, itemType: item.type,
+                fromUserId: item.currentHolder || null, fromUserName: item.currentHolderName || "Unknown",
+                toUserId: null, toUserName: "Office",
+                action: "return", eventName: null,
+                adminOverride: true,
+                timestamp: serverTimestamp(),
+            });
+        } catch (e) { console.error("Admin return error:", e); }
+        setAdminOverrideLoading(false);
+    };
+
+    const handleAdminAssign = async (toUser) => {
+        if (!item || adminOverrideLoading) return;
+        setAdminOverrideLoading(true);
+        try {
+            await updateDoc(doc(getFirebaseDb(), "items", item.id), {
+                status: "out",
+                currentHolder: toUser.id,
+                currentHolderName: toUser.name,
+                currentHolderPhoto: toUser.photoURL || null,
+                updatedAt: serverTimestamp(),
+            });
+            await addDoc(collection(getFirebaseDb(), "transfers"), {
+                itemId: item.id, itemName: item.name, itemType: item.type,
+                fromUserId: item.currentHolder || null,
+                fromUserName: item.status === "office" ? "Office" : (item.currentHolderName || "Unknown"),
+                toUserId: toUser.id, toUserName: toUser.name,
+                action: item.status === "office" ? "pickup" : "transfer",
+                eventName: null,
+                adminOverride: true,
+                timestamp: serverTimestamp(),
+            });
+            setShowAdminTransferModal(false);
+        } catch (e) { console.error("Admin assign error:", e); }
+        setAdminOverrideLoading(false);
     };
 
     if (loading || itemLoading) {
@@ -363,6 +414,49 @@ export default function ItemDetailPage() {
                     )}
                 </div>
 
+                {/* Admin Override */}
+                {isAdmin && user && (
+                    <div className="card p-4 sm:p-6 mt-3 sm:mt-4" style={{ borderColor: "#fde68a", borderWidth: "1px" }}>
+                        <div className="flex items-center gap-2 mb-4">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#b45309" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                            </svg>
+                            <span className="text-[13px] font-semibold" style={{ color: "#b45309" }}>Admin Override</span>
+                        </div>
+                        <div className="space-y-2.5">
+                            {!isInOffice && (
+                                <button
+                                    onClick={handleAdminReturn}
+                                    disabled={adminOverrideLoading}
+                                    className="btn-action return-item disabled:opacity-40 disabled:cursor-not-allowed"
+                                >
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                        <polyline points="7 10 12 15 17 10" />
+                                        <line x1="12" y1="15" x2="12" y2="3" />
+                                    </svg>
+                                    Force return to office
+                                    {adminOverrideLoading && <span className="ml-auto spinner !w-4 !h-4 !border-2"></span>}
+                                </button>
+                            )}
+                            <button
+                                onClick={() => setShowAdminTransferModal(true)}
+                                disabled={adminOverrideLoading}
+                                className="btn-action transfer disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                                    <circle cx="8.5" cy="7" r="4" />
+                                    <line x1="20" y1="8" x2="20" y2="14" />
+                                    <line x1="23" y1="11" x2="17" y2="11" />
+                                </svg>
+                                {isInOffice ? "Assign to someone" : "Reassign to someone"}
+                            </button>
+                        </div>
+                    </div>
+                )}
+
                 {/* Transfer History */}
                 <div className="mt-6 sm:mt-8">
                     <h2 className="font-semibold text-base sm:text-lg mb-4">History</h2>
@@ -434,7 +528,14 @@ export default function ItemDetailPage() {
                                         {transfer.eventName && (
                                             <p className="text-[12px] mt-1 text-[var(--esn-magenta)] font-medium">{transfer.eventName}</p>
                                         )}
-                                        <p className="text-[12px] text-[var(--text-muted)] mt-1">{formatDate(transfer.timestamp)}</p>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <p className="text-[12px] text-[var(--text-muted)]">{formatDate(transfer.timestamp)}</p>
+                                            {transfer.adminOverride && (
+                                                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded" style={{ background: "#fffbeb", color: "#b45309", border: "1px solid #fde68a" }}>
+                                                    admin override
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             ))}
@@ -448,6 +549,13 @@ export default function ItemDetailPage() {
                     onClose={() => setShowTransferModal(false)}
                     onTransfer={handleTransfer}
                     currentUserId={user?.uid}
+                />
+            )}
+            {showAdminTransferModal && (
+                <TransferModal
+                    onClose={() => setShowAdminTransferModal(false)}
+                    onTransfer={handleAdminAssign}
+                    currentUserId={null}
                 />
             )}
         </div>

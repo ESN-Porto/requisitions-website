@@ -27,9 +27,11 @@ export function AuthProvider({ children }) {
                     setUserData({ id: firebaseUser.uid, ...userDoc.data() });
                 } else {
                     // First login — create user profile
+                    // Check if they are in the strict auto-admin list
                     const isAutoAdmin = AUTO_ADMIN_EMAILS.includes(
                         firebaseUser.email?.toLowerCase()
                     );
+                    
                     const newUserData = {
                         email: firebaseUser.email,
                         name: firebaseUser.displayName,

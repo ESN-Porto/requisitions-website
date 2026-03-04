@@ -20,7 +20,7 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
-    // Matches the AUTO_ADMIN_EMAILS in your AuthContext
+    // Only these specific emails can auto-create their account with the 'admin' role
     function isAutoAdminEmail() {
       return request.auth.token.email != null && 
         request.auth.token.email.lower() in [
@@ -34,22 +34,20 @@ service cloud.firestore {
     // 2. COLLECTION RULES
     // ====================================================
 
-    // --- USERS ---
     match /users/{userId} {
-      // Any logged-in user needs to read profiles (e.g., for the Transfer Modal)
       allow read: if isAuthenticated();
       
-      // Protects against users injecting { role: "admin" } on signup
+      // CREATE: Strict auto-admin list applies here
       allow create: if isOwner(userId) && (
         (request.resource.data.role == 'admin' && isAutoAdminEmail()) ||
         (request.resource.data.role == 'member')
       );
       
-      // Users can update their own profile, but CANNOT elevate their role. Admins can update any.
-      allow update: if isAdmin() || (
-        isOwner(userId) && 
-        request.resource.data.role == resource.data.role // role must remain unchanged
-      );
+      // UPDATE: Admins can update users. If they are setting role to 'admin', 
+      // the target user's email MUST end in @esnporto.org
+      allow update: if 
+        (isAdmin() && (request.resource.data.role != 'admin' || request.resource.data.email.lower().matches('.*@esnporto\\.org'))) || 
+        (isOwner(userId) && request.resource.data.role == resource.data.role);
       
       allow delete: if isAdmin();
     }

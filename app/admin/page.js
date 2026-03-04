@@ -112,7 +112,6 @@ export default function AdminPage() {
         setSaving(true);
         try {
             let photoURL = editingItem?.photoURL || null;
-            // Inside handleSaveItem:
             if (imageFile) {
                 // 1. Get the current user's secure ID token
                 const token = await user.getIdToken(); 
@@ -427,7 +426,12 @@ export default function AdminPage() {
                                         {u.role}
                                     </span>
                                     {u.id !== user.uid && (
-                                        <button onClick={() => toggleRole(u.id, u.role)} className="btn-secondary !py-2 !px-3.5 !text-[13px]">
+                                        <button 
+                                            onClick={() => toggleRole(u.id, u.role)} 
+                                            // Disables if they aren't an admin currently AND their email is not an esnporto.org email
+                                            disabled={u.role !== "admin" && !u.email?.toLowerCase().endsWith("@esnporto.org")}
+                                            className="btn-secondary !py-2 !px-3.5 !text-[13px] disabled:opacity-40 disabled:cursor-not-allowed"
+                                        >
                                             {u.role === "admin" ? "Demote" : "Promote"}
                                         </button>
                                     )}

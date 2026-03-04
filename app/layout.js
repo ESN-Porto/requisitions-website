@@ -9,7 +9,7 @@ const inter = Inter({
 });
 
 export const metadata = {
-    title: "Item Tracker — ESN Porto",
+    title: "Requisitions Tracker — ESN Porto",
     description:
         "Track who has the cameras, Tondelas, and cards. ESN Porto equipment management.",
     icons: {

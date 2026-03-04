@@ -10,11 +10,14 @@ export default function Navbar() {
     const { user, userData, logout, isAdmin, signInWithGoogle } = useAuth();
     const pathname = usePathname();
     const [showMenu, setShowMenu] = useState(false);
-    const menuRef = useRef(null);
+    const desktopMenuRef = useRef(null);
+    const mobileMenuRef = useRef(null);
 
     useEffect(() => {
         const handleClickOutside = (e) => {
-            if (menuRef.current && !menuRef.current.contains(e.target)) {
+            const inDesktop = desktopMenuRef.current && desktopMenuRef.current.contains(e.target);
+            const inMobile = mobileMenuRef.current && mobileMenuRef.current.contains(e.target);
+            if (!inDesktop && !inMobile) {
                 setShowMenu(false);
             }
         };
@@ -36,7 +39,7 @@ export default function Navbar() {
                             priority
                         />
                         <span className="font-semibold text-[15px] text-[var(--text-primary)]">
-                            Item Tracker
+                            Requisitions Tracker
                         </span>
                     </Link>
 
@@ -60,7 +63,7 @@ export default function Navbar() {
                         )}
 
                         {user ? (
-                            <div className="relative ml-4 pl-4 border-l border-[var(--border-color)]" ref={menuRef}>
+                            <div className="relative ml-4 pl-4 border-l border-[var(--border-color)]" ref={desktopMenuRef}>
                                 <button
                                     onClick={() => setShowMenu(!showMenu)}
                                     className="flex items-center gap-3 cursor-pointer"
@@ -104,7 +107,7 @@ export default function Navbar() {
                     </div>
 
                     {/* Mobile avatar or Sign in */}
-                    <div className="sm:hidden relative flex items-center" ref={menuRef}>
+                    <div className="sm:hidden relative flex items-center" ref={mobileMenuRef}>
                         {user ? (
                             <>
                                 <button

@@ -60,7 +60,7 @@ export default function HomePage() {
       <main className="max-w-6xl mx-auto px-4 sm:px-8 py-5 sm:py-8">
         {/* Header */}
         <div className="mb-5 sm:mb-8">
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Items</h1>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Requisitions</h1>
           <p className="text-[15px] text-[var(--text-muted)] mt-1">
             {items.filter((i) => i.status === "office").length} in office
             {" \u00B7 "}

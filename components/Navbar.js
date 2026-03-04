@@ -10,11 +10,14 @@ export default function Navbar() {
     const { user, userData, logout, isAdmin, signInWithGoogle } = useAuth();
     const pathname = usePathname();
     const [showMenu, setShowMenu] = useState(false);
-    const menuRef = useRef(null);
+    const desktopMenuRef = useRef(null);
+    const mobileMenuRef = useRef(null);
 
     useEffect(() => {
         const handleClickOutside = (e) => {
-            if (menuRef.current && !menuRef.current.contains(e.target)) {
+            const inDesktop = desktopMenuRef.current && desktopMenuRef.current.contains(e.target);
+            const inMobile = mobileMenuRef.current && mobileMenuRef.current.contains(e.target);
+            if (!inDesktop && !inMobile) {
                 setShowMenu(false);
             }
         };
@@ -42,29 +45,25 @@ export default function Navbar() {
 
                     {/* Desktop nav links */}
                     <div className="hidden sm:flex items-center gap-1.5">
-                        <Link
-                            href="/"
-                            className={`nav-link ${pathname === "/" ? "active" : ""}`}
-                        >
-                            Dashboard
-                        </Link>
-                        <Link
-                            href="/history"
-                            className={`nav-link ${pathname === "/history" ? "active" : ""}`}
-                        >
-                            History
-                        </Link>
                         {isAdmin && (
-                            <Link
-                                href="/admin"
-                                className={`nav-link ${pathname === "/admin" ? "active" : ""}`}
-                            >
-                                Admin
-                            </Link>
+                            <>
+                                <Link
+                                    href="/"
+                                    className={`nav-link ${pathname === "/" ? "active" : ""}`}
+                                >
+                                    Home
+                                </Link>
+                                <Link
+                                    href="/admin"
+                                    className={`nav-link ${pathname === "/admin" ? "active" : ""}`}
+                                >
+                                    Admin
+                                </Link>
+                            </>
                         )}
-                        
+
                         {user ? (
-                            <div className="relative ml-4 pl-4 border-l border-[var(--border-color)]" ref={menuRef}>
+                            <div className="relative ml-4 pl-4 border-l border-[var(--border-color)]" ref={desktopMenuRef}>
                                 <button
                                     onClick={() => setShowMenu(!showMenu)}
                                     className="flex items-center gap-3 cursor-pointer"
@@ -108,7 +107,7 @@ export default function Navbar() {
                     </div>
 
                     {/* Mobile avatar or Sign in */}
-                    <div className="sm:hidden relative flex items-center" ref={menuRef}>
+                    <div className="sm:hidden relative flex items-center" ref={mobileMenuRef}>
                         {user ? (
                             <>
                                 <button
@@ -158,28 +157,22 @@ export default function Navbar() {
                 </div>
 
                 {/* Mobile bottom nav */}
-                <div className="sm:hidden flex items-center gap-1 pb-2.5 -mt-1">
-                    <Link
-                        href="/"
-                        className={`nav-link ${pathname === "/" ? "active" : ""}`}
-                    >
-                        Dashboard
-                    </Link>
-                    <Link
-                        href="/history"
-                        className={`nav-link ${pathname === "/history" ? "active" : ""}`}
-                    >
-                        History
-                    </Link>
-                    {isAdmin && (
+                {isAdmin && (
+                    <div className="sm:hidden flex items-center gap-1 pb-2.5 -mt-1">
+                        <Link
+                            href="/"
+                            className={`nav-link ${pathname === "/" ? "active" : ""}`}
+                        >
+                            Home
+                        </Link>
                         <Link
                             href="/admin"
                             className={`nav-link ${pathname === "/admin" ? "active" : ""}`}
                         >
                             Admin
                         </Link>
-                    )}
-                </div>
+                    </div>
+                )}
             </div>
         </nav>
     );

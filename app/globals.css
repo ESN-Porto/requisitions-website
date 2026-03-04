@@ -402,23 +402,7 @@
     letter-spacing: 0.02em;
   }
 
-  .type-camera {
-    background: #f0f6ff;
-    color: #0055d4;
-    border: 1px solid #c2d9f7;
-  }
-
-  .type-tondela {
-    background: #f6f0ff;
-    color: #7c3aed;
-    border: 1px solid #e0d0f7;
-  }
-
-  .type-card {
-    background: #fff5ee;
-    color: #c2410c;
-    border: 1px solid #fdd8be;
-  }
+  /* Type-specific badge colors are applied inline from Firestore category data */
 
   /* ---------- Filter Pills ---------- */
   .filter-pill {
@@ -598,8 +582,13 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideUp {
@@ -607,6 +596,7 @@
     opacity: 0;
     transform: translateY(8px) scale(0.98);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -614,8 +604,15 @@
 }
 
 @keyframes pulse-out {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
 }
 
 /* =========================================================

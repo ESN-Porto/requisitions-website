@@ -12,13 +12,12 @@ import {
     collection,
     query,
     where,
+    orderBy,
     onSnapshot,
     getDocs,
     serverTimestamp,
 } from "firebase/firestore";
 import { getFirebaseDb } from "@/lib/firebase";
-
-const TYPE_EMOJI = { camera: "\u{1F4F7}", tondela: "\u{1F9F8}", card: "\u{1F4B3}" };
 
 export default function ItemDetailPage() {
     const { user, userData, loading, signInWithGoogle } = useAuth();
@@ -26,6 +25,7 @@ export default function ItemDetailPage() {
     const router = useRouter();
     const [item, setItem] = useState(null);
     const [transfers, setTransfers] = useState([]);
+    const [categories, setCategories] = useState([]);
     const [usersMap, setUsersMap] = useState({});
     const [itemLoading, setItemLoading] = useState(true);
     const [transfersLoading, setTransfersLoading] = useState(true);
@@ -67,9 +67,15 @@ export default function ItemDetailPage() {
             setTransfersLoading(false);
         });
 
+        const unsubCategories = onSnapshot(
+            query(collection(getFirebaseDb(), "categories"), orderBy("name")),
+            (snap) => setCategories(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
+        );
+
         return () => {
             unsubItem();
             unsubTransfers();
+            unsubCategories();
         };
     }, [params.id]);
 
@@ -168,6 +174,10 @@ export default function ItemDetailPage() {
     const isInOffice = item.status === "office";
     const isCurrentHolder = user ? item.currentHolder === user.uid : false;
     const holderPhoto = item.currentHolderPhoto || usersMap[item.currentHolder]?.photoURL;
+    const cat = categories.find((c) => c.key === item.type);
+    const badgeStyle = cat
+        ? { background: cat.bgColor, color: cat.color, border: `1px solid ${cat.borderColor}` }
+        : undefined;
 
     const formatDate = (timestamp) => {
         if (!timestamp) return "";
@@ -214,7 +224,7 @@ export default function ItemDetailPage() {
                             <img src={item.photoURL} alt={item.name} className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl object-cover ring-1 ring-black/5 flex-shrink-0" />
                         ) : (
                             <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-[var(--bg-secondary)] flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0">
-                                {TYPE_EMOJI[item.type] || "\u{1F4E6}"}
+                                {"\u{1F4E6}"}
                             </div>
                         )}
                         <div className="flex-1 min-w-0">
@@ -225,7 +235,7 @@ export default function ItemDetailPage() {
                                     {isInOffice ? "Office" : "Out"}
                                 </div>
                             </div>
-                            <span className={`type-badge mt-1.5 type-${item.type}`}>
+                            <span className="type-badge mt-1.5" style={badgeStyle}>
                                 {item.type}
                             </span>
                         </div>

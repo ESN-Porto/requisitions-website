@@ -2,14 +2,17 @@
 
 import Link from "next/link";
 
-const TYPE_EMOJI = {
-    camera: "\u{1F4F7}",
-    tondela: "\u{1F9F8}",
-    card: "\u{1F4B3}",
-};
-
-export default function ItemCard({ item }) {
+export default function ItemCard({ item, categories = [] }) {
     const isInOffice = item.status === "office";
+    const cat = categories.find((c) => c.key === item.type);
+
+    const badgeStyle = cat
+        ? {
+            background: cat.bgColor,
+            color: cat.color,
+            border: `1px solid ${cat.borderColor}`,
+        }
+        : undefined;
 
     return (
         <Link href={`/item/${item.id}`}>
@@ -23,7 +26,7 @@ export default function ItemCard({ item }) {
                     />
                 ) : (
                     <div className="item-image-placeholder">
-                        {TYPE_EMOJI[item.type] || "\u{1F4E6}"}
+                        {"\u{1F4E6}"}
                     </div>
                 )}
 
@@ -43,7 +46,7 @@ export default function ItemCard({ item }) {
                         </div>
                     </div>
 
-                    <span className={`type-badge type-${item.type}`}>
+                    <span className="type-badge" style={badgeStyle}>
                         {item.type}
                     </span>
 

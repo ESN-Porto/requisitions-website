@@ -34,6 +34,7 @@ export default function ItemDetailPage() {
     const [eventName, setEventName] = useState("");
     const [adminOverrideLoading, setAdminOverrideLoading] = useState(false);
     const [showAdminTransferModal, setShowAdminTransferModal] = useState(false);
+    const [visibleCount, setVisibleCount] = useState(10);
 
     useEffect(() => {
         if (!params.id) return;
@@ -469,10 +470,10 @@ export default function ItemDetailPage() {
                         </div>
                     ) : (
                         <div className="card overflow-hidden">
-                            {transfers.map((transfer, index) => (
+                            {transfers.slice(0, visibleCount).map((transfer, index, arr) => (
                                 <div
                                     key={transfer.id}
-                                    className={`flex items-start gap-3 p-4 sm:p-5 ${index !== transfers.length - 1 ? "border-b border-[var(--border-subtle)]" : ""
+                                    className={`flex items-start gap-3 p-4 sm:p-5 ${index !== arr.length - 1 ? "border-b border-[var(--border-subtle)]" : ""
                                         }`}
                                 >
                                     {/* User avatar */}
@@ -539,6 +540,14 @@ export default function ItemDetailPage() {
                                     </div>
                                 </div>
                             ))}
+                            {visibleCount < transfers.length && (
+                                <button
+                                    onClick={() => setVisibleCount((n) => n + 10)}
+                                    className="w-full p-3.5 text-[13px] font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)] transition-colors border-t border-[var(--border-subtle)]"
+                                >
+                                    Load more ({transfers.length - visibleCount} remaining)
+                                </button>
+                            )}
                         </div>
                     )}
                 </div>

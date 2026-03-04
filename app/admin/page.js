@@ -4,7 +4,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/Navbar";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { QRCodeSVG } from "qrcode.react";
 import {
     collection,
     query,
@@ -37,7 +36,6 @@ export default function AdminPage() {
     const [users, setUsers] = useState([]);
     const [categories, setCategories] = useState([]);
     const [showItemForm, setShowItemForm] = useState(false);
-    const [showQRForItem, setShowQRForItem] = useState(null);
     const [editingItem, setEditingItem] = useState(null);
     const [formData, setFormData] = useState({ name: "", type: "" });
     const [imageFile, setImageFile] = useState(null);
@@ -483,16 +481,6 @@ export default function AdminPage() {
                     </div>
                 )}
 
-<<<<<<< HEAD
-                {/* QR Code Modal */}
-                {showQRForItem && (
-                    <div className="modal-overlay" onClick={() => setShowQRForItem(null)}>
-                        <div className="modal-content text-center" onClick={(e) => e.stopPropagation()}>
-                            <div className="flex items-center justify-between mb-6">
-                                <h2 className="text-lg font-semibold text-left">QR Code: {showQRForItem.name}</h2>
-                                <button
-                                    onClick={() => setShowQRForItem(null)}
-=======
                 {/* Category Form Modal */}
                 {showCategoryForm && (
                     <div className="modal-overlay" onClick={() => setShowCategoryForm(false)}>
@@ -503,7 +491,6 @@ export default function AdminPage() {
                                 </h2>
                                 <button
                                     onClick={() => setShowCategoryForm(false)}
->>>>>>> cb564162ecff493c0e263f99a7d7a8c4348aa0fd
                                     className="p-1.5 rounded-lg hover:bg-[var(--bg-secondary)] transition-colors text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                                 >
                                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -512,28 +499,6 @@ export default function AdminPage() {
                                     </svg>
                                 </button>
                             </div>
-<<<<<<< HEAD
-                            
-                            <div className="flex flex-col items-center justify-center p-6 bg-white rounded-xl mb-4 border border-[var(--border-color)]">
-                                <QRCodeSVG 
-                                    value={`${typeof window !== 'undefined' ? window.location.origin : ''}/item/${showQRForItem.id}`} 
-                                    size={200} 
-                                    level="H"
-                                    includeMargin={true}
-                                />
-                            </div>
-                            
-                            <p className="text-[13px] text-[var(--text-muted)] mb-4">
-                                Print this code and attach it to the physical item. Anyone who scans it will be taken directly to the item's action page.
-                            </p>
-                            
-                            <button 
-                                onClick={() => window.print()} 
-                                className="btn-primary w-full"
-                            >
-                                Print Page
-                            </button>
-=======
                             <div className="space-y-4">
                                 <div>
                                     <label className="text-[13px] font-medium text-[var(--text-secondary)] mb-1.5 block">Name</label>
@@ -605,7 +570,6 @@ export default function AdminPage() {
                                     <button onClick={() => setShowCategoryForm(false)} className="btn-secondary">Cancel</button>
                                 </div>
                             </div>
->>>>>>> cb564162ecff493c0e263f99a7d7a8c4348aa0fd
                         </div>
                     </div>
                 )}

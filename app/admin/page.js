@@ -112,10 +112,23 @@ export default function AdminPage() {
         setSaving(true);
         try {
             let photoURL = editingItem?.photoURL || null;
+            // Inside handleSaveItem:
             if (imageFile) {
+                // 1. Get the current user's secure ID token
+                const token = await user.getIdToken(); 
+                
                 const fd = new FormData();
                 fd.append("file", imageFile);
-                const res = await fetch("/api/upload", { method: "POST", body: fd });
+                
+                // 2. Attach it to the Authorization header
+                const res = await fetch("/api/upload", { 
+                    method: "POST", 
+                    headers: {
+                        "Authorization": `Bearer ${token}`
+                    },
+                    body: fd 
+                });
+                
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
                 photoURL = data.url;

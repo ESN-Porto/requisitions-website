@@ -1,0 +1,88 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ====================================================
+    // 1. HELPER FUNCTIONS
+    // ====================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Checks if the user is an admin by reading their user document
+    function isAdmin() {
+      return isAuthenticated() && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Matches the AUTO_ADMIN_EMAILS in your AuthContext
+    function isAutoAdminEmail() {
+      return request.auth.token.email != null && 
+        request.auth.token.email.lower() in [
+          'wpa@esnporto.org', 
+          'office.team@esnporto.org', 
+          'treasurer@esnporto.org'
+        ];
+    }
+
+    // ====================================================
+    // 2. COLLECTION RULES
+    // ====================================================
+
+    // --- USERS ---
+    match /users/{userId} {
+      // Any logged-in user needs to read profiles (e.g., for the Transfer Modal)
+      allow read: if isAuthenticated();
+      
+      // Protects against users injecting { role: "admin" } on signup
+      allow create: if isOwner(userId) && (
+        (request.resource.data.role == 'admin' && isAutoAdminEmail()) ||
+        (request.resource.data.role == 'member')
+      );
+      
+      // Users can update their own profile, but CANNOT elevate their role. Admins can update any.
+      allow update: if isAdmin() || (
+        isOwner(userId) && 
+        request.resource.data.role == resource.data.role // role must remain unchanged
+      );
+      
+      allow delete: if isAdmin();
+    }
+
+    // --- CATEGORIES ---
+    match /categories/{categoryId} {
+      allow read: if true; 
+      allow write: if isAdmin();
+    }
+
+    // --- ITEMS ---
+    match /items/{itemId} {
+      allow read: if true;
+      allow create, delete: if isAdmin();
+      
+      // Admins can change anything (name, photo, category).
+      // Members can ONLY change fields related to checking items in/out.
+      allow update: if isAdmin() || (
+        isAuthenticated() &&
+        request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['status', 'currentHolder', 'currentHolderName', 'currentHolderPhoto', 'updatedAt'])
+      );
+    }
+
+    // --- TRANSFERS (AUDIT LOG) ---
+    match /transfers/{transferId} {
+      allow read: if true;
+      
+      // Authenticated users can create a history record
+      allow create: if isAuthenticated();
+      
+      // IMMUTABLE: No one can edit or delete history once it's written
+      allow update, delete: if false;
+    }
+  }
+}

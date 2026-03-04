@@ -3,6 +3,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/Navbar";
 import Link from "next/link";
+import { QRCodeCanvas } from "qrcode.react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -42,6 +43,7 @@ export default function AdminPage() {
     const [imageFile, setImageFile] = useState(null);
     const [saving, setSaving] = useState(false);
     const [deleteConfirm, setDeleteConfirm] = useState(null);
+    const [qrItem, setQrItem] = useState(null);
 
     // Category form state
     const [showCategoryForm, setShowCategoryForm] = useState(false);
@@ -302,6 +304,13 @@ export default function AdminPage() {
                                                 </div>
                                             </Link>
                                             <div className="flex gap-1.5 sm:gap-2 flex-shrink-0">
+                                                <button onClick={() => setQrItem(item)} className="btn-secondary !py-1.5 !px-2.5 sm:!py-2 sm:!px-3.5 !text-[12px] sm:!text-[13px]" title="QR Code">
+                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                        <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+                                                        <rect x="5" y="5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="16" y="5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="5" y="16" width="3" height="3" fill="currentColor" stroke="none"/>
+                                                        <path d="M14 14h3v3h-3z" fill="currentColor" stroke="none"/><path d="M17 17h3v3h-3z" fill="currentColor" stroke="none"/><path d="M14 20h3" /><path d="M20 14v3" />
+                                                    </svg>
+                                                </button>
                                                 <button onClick={() => openEditForm(item)} className="btn-secondary !py-1.5 !px-2.5 sm:!py-2 sm:!px-3.5 !text-[12px] sm:!text-[13px]">Edit</button>
                                                 {deleteConfirm === item.id ? (
                                                     <>
@@ -577,6 +586,56 @@ export default function AdminPage() {
                     </div>
                 )}
             </main>
+
+            {/* QR Code Modal */}
+            {qrItem && (
+            <div className="modal-overlay" onClick={() => setQrItem(null)}>
+                <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center justify-between mb-5">
+                        <h2 className="text-lg font-semibold">QR Code</h2>
+                        <button
+                            onClick={() => setQrItem(null)}
+                            className="p-1.5 rounded-lg hover:bg-[var(--bg-secondary)] transition-colors text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                        >
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div className="flex flex-col items-center gap-4">
+                        <div className="p-4 rounded-2xl bg-white">
+                            <QRCodeCanvas
+                                id="qr-canvas"
+                                value={`${typeof window !== "undefined" ? window.location.origin : ""}/item/${qrItem.id}`}
+                                size={200}
+                                marginSize={1}
+                            />
+                        </div>
+                        <div className="text-center">
+                            <p className="font-semibold text-[15px]">{qrItem.name}</p>
+                            <p className="text-[12px] text-[var(--text-muted)] mt-0.5 font-mono">/item/{qrItem.id}</p>
+                        </div>
+                        <button
+                            onClick={() => {
+                                const canvas = document.getElementById("qr-canvas");
+                                if (!canvas) return;
+                                const url = canvas.toDataURL("image/png");
+                                const a = document.createElement("a");
+                                a.href = url;
+                                a.download = `${qrItem.name}-qr.png`;
+                                a.click();
+                            }}
+                            className="btn-primary w-full"
+                        >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",marginRight:"6px",verticalAlign:"text-bottom"}}>
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                            </svg>
+                            Download PNG
+                        </button>
+                    </div>
+                </div>
+            </div>
+            )}
         </div>
     );
 }

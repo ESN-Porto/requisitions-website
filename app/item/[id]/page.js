@@ -226,7 +226,7 @@ export default function ItemDetailPage() {
                                 </div>
                             </div>
                             <span className={`type-badge mt-1.5 type-${item.type}`}>
-                                {TYPE_EMOJI[item.type]} {item.type}
+                                {item.type}
                             </span>
                         </div>
                     </div>
@@ -368,9 +368,8 @@ export default function ItemDetailPage() {
                             {transfers.map((transfer, index) => (
                                 <div
                                     key={transfer.id}
-                                    className={`flex items-start gap-3 p-4 sm:p-5 ${
-                                        index !== transfers.length - 1 ? "border-b border-[var(--border-subtle)]" : ""
-                                    }`}
+                                    className={`flex items-start gap-3 p-4 sm:p-5 ${index !== transfers.length - 1 ? "border-b border-[var(--border-subtle)]" : ""
+                                        }`}
                                 >
                                     {/* User avatar */}
                                     {transfer.action === "transfer" ? (

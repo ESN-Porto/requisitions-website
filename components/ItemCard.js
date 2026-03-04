@@ -44,7 +44,7 @@ export default function ItemCard({ item }) {
                     </div>
 
                     <span className={`type-badge type-${item.type}`}>
-                        {TYPE_EMOJI[item.type]} {item.type}
+                        {item.type}
                     </span>
 
                     <p className="text-[13px] text-[var(--text-secondary)] mt-3">

@@ -2,6 +2,7 @@
 
 import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/Navbar";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -227,13 +228,13 @@ export default function AdminPage() {
             <main className="max-w-3xl mx-auto px-4 sm:px-8 py-5 sm:py-8">
                 <div className="mb-5 sm:mb-8">
                     <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Admin</h1>
-                    <p className="text-[14px] sm:text-[15px] text-[var(--text-muted)] mt-1">Manage items, categories and users</p>
+                    <p className="text-[14px] sm:text-[15px] text-[var(--text-muted)] mt-1">Manage requisitions, categories and users</p>
                 </div>
 
                 {/* Tabs */}
                 <div className="flex gap-2 mb-5 sm:mb-6">
                     {[
-                        { key: "items", label: `Items (${items.length})` },
+                        { key: "items", label: `Requisitions (${items.length})` },
                         { key: "categories", label: `Categories (${categories.length})` },
                         { key: "users", label: `Users (${users.length})` },
                     ].map(({ key, label }) => (
@@ -251,20 +252,20 @@ export default function AdminPage() {
                 {activeTab === "items" && (
                     <div>
                         <div className="flex justify-end mb-4">
-                            <button onClick={openAddForm} className="btn-primary" disabled={categories.length === 0}>+ Add Item</button>
+                            <button onClick={openAddForm} className="btn-primary" disabled={categories.length === 0}>+ Add Requisition</button>
                         </div>
 
                         {categories.length === 0 && (
                             <div className="card p-5 mb-4 text-center">
-                                <p className="text-[14px] text-[var(--text-muted)]">Create a category first before adding items.</p>
+                                <p className="text-[14px] text-[var(--text-muted)]">Create a category first before adding requisitions.</p>
                             </div>
                         )}
 
                         {items.length === 0 ? (
                             <div className="card p-12 text-center">
                                 <p className="text-5xl mb-4 opacity-40">{"\u{1F4E6}"}</p>
-                                <p className="font-semibold text-[var(--text-secondary)]">No items yet</p>
-                                <p className="text-sm text-[var(--text-muted)] mt-1">Add your first item</p>
+                                <p className="font-semibold text-[var(--text-secondary)]">No requisitions yet</p>
+                                <p className="text-sm text-[var(--text-muted)] mt-1">Add your first requisition</p>
                             </div>
                         ) : (
                             <div className="card overflow-hidden">
@@ -276,28 +277,30 @@ export default function AdminPage() {
                                             className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-4 ${index !== items.length - 1 ? "border-b border-[var(--border-subtle)]" : ""
                                                 }`}
                                         >
-                                            {item.photoURL ? (
-                                                <img src={item.photoURL} alt={item.name} className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl object-cover ring-1 ring-black/5" />
-                                            ) : (
-                                                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[var(--bg-secondary)] flex items-center justify-center text-lg sm:text-xl">
-                                                    {"\u{1F4E6}"}
+                                            <Link href={`/item/${item.id}`} className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0 hover:opacity-70 transition-opacity">
+                                                {item.photoURL ? (
+                                                    <img src={item.photoURL} alt={item.name} className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl object-cover ring-1 ring-black/5 flex-shrink-0" />
+                                                ) : (
+                                                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[var(--bg-secondary)] flex items-center justify-center text-lg sm:text-xl flex-shrink-0">
+                                                        {"\u{1F4E6}"}
+                                                    </div>
+                                                )}
+                                                <div className="min-w-0">
+                                                    <p className="font-medium text-[13px] sm:text-[14px] truncate">{item.name}</p>
+                                                    <div className="flex items-center gap-1.5 sm:gap-2 mt-1">
+                                                        <span
+                                                            className="type-badge"
+                                                            style={cat ? getCategoryBadgeStyle(cat) : undefined}
+                                                        >
+                                                            {item.type}
+                                                        </span>
+                                                        <span className={`status-badge text-[11px] ${item.status === "office" ? "status-office" : "status-out"}`}>
+                                                            <span className={`status-dot ${item.status === "office" ? "office" : "out"}`}></span>
+                                                            <span className="hidden sm:inline">{item.status === "office" ? "Office" : item.currentHolderName}</span>
+                                                        </span>
+                                                    </div>
                                                 </div>
-                                            )}
-                                            <div className="flex-1 min-w-0">
-                                                <p className="font-medium text-[13px] sm:text-[14px] truncate">{item.name}</p>
-                                                <div className="flex items-center gap-1.5 sm:gap-2 mt-1">
-                                                    <span
-                                                        className="type-badge"
-                                                        style={cat ? getCategoryBadgeStyle(cat) : undefined}
-                                                    >
-                                                        {item.type}
-                                                    </span>
-                                                    <span className={`status-badge text-[11px] ${item.status === "office" ? "status-office" : "status-out"}`}>
-                                                        <span className={`status-dot ${item.status === "office" ? "office" : "out"}`}></span>
-                                                        <span className="hidden sm:inline">{item.status === "office" ? "Office" : item.currentHolderName}</span>
-                                                    </span>
-                                                </div>
-                                            </div>
+                                            </Link>
                                             <div className="flex gap-1.5 sm:gap-2 flex-shrink-0">
                                                 <button onClick={() => openEditForm(item)} className="btn-secondary !py-1.5 !px-2.5 sm:!py-2 sm:!px-3.5 !text-[12px] sm:!text-[13px]">Edit</button>
                                                 {deleteConfirm === item.id ? (
@@ -391,8 +394,8 @@ export default function AdminPage() {
                                     </div>
                                 )}
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-[14px] font-medium">{u.name}</p>
-                                    <p className="text-xs text-[var(--text-muted)]">{u.email}</p>
+                                    <p className="text-[14px] font-medium truncate">{u.name}</p>
+                                    <p className="text-xs text-[var(--text-muted)] truncate">{u.email}</p>
                                 </div>
                                 <div className="flex items-center gap-2.5 flex-shrink-0">
                                     <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-md ${u.role === "admin"

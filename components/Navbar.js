@@ -129,10 +129,10 @@ export default function Navbar() {
                                 </button>
 
                                 {showMenu && (
-                                    <div className="absolute right-0 top-full mt-2 w-56 card p-2 shadow-lg">
-                                        <div className="px-3 py-2.5 border-b border-[var(--border-subtle)] mb-1.5">
-                                            <p className="text-[14px] font-medium text-[var(--text-primary)]">{userData?.name}</p>
-                                            <p className="text-[12px] text-[var(--text-muted)] mt-0.5">{userData?.email}</p>
+                                    <div className="absolute right-0 top-full mt-2 card p-2 shadow-lg" style={{ width: "min(224px, calc(100vw - 24px))" }}>
+                                        <div className="px-3 py-2.5 border-b border-[var(--border-subtle)] mb-1.5 min-w-0">
+                                            <p className="text-[14px] font-medium text-[var(--text-primary)] truncate">{userData?.name}</p>
+                                            <p className="text-[12px] text-[var(--text-muted)] mt-0.5 truncate">{userData?.email}</p>
                                         </div>
                                         <button
                                             onClick={() => { logout(); setShowMenu(false); }}

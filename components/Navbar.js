@@ -42,27 +42,23 @@ export default function Navbar() {
 
                     {/* Desktop nav links */}
                     <div className="hidden sm:flex items-center gap-1.5">
-                        <Link
-                            href="/"
-                            className={`nav-link ${pathname === "/" ? "active" : ""}`}
-                        >
-                            Dashboard
-                        </Link>
-                        <Link
-                            href="/history"
-                            className={`nav-link ${pathname === "/history" ? "active" : ""}`}
-                        >
-                            History
-                        </Link>
                         {isAdmin && (
-                            <Link
-                                href="/admin"
-                                className={`nav-link ${pathname === "/admin" ? "active" : ""}`}
-                            >
-                                Admin
-                            </Link>
+                            <>
+                                <Link
+                                    href="/"
+                                    className={`nav-link ${pathname === "/" ? "active" : ""}`}
+                                >
+                                    Home
+                                </Link>
+                                <Link
+                                    href="/admin"
+                                    className={`nav-link ${pathname === "/admin" ? "active" : ""}`}
+                                >
+                                    Admin
+                                </Link>
+                            </>
                         )}
-                        
+
                         {user ? (
                             <div className="relative ml-4 pl-4 border-l border-[var(--border-color)]" ref={menuRef}>
                                 <button
@@ -158,28 +154,22 @@ export default function Navbar() {
                 </div>
 
                 {/* Mobile bottom nav */}
-                <div className="sm:hidden flex items-center gap-1 pb-2.5 -mt-1">
-                    <Link
-                        href="/"
-                        className={`nav-link ${pathname === "/" ? "active" : ""}`}
-                    >
-                        Dashboard
-                    </Link>
-                    <Link
-                        href="/history"
-                        className={`nav-link ${pathname === "/history" ? "active" : ""}`}
-                    >
-                        History
-                    </Link>
-                    {isAdmin && (
+                {isAdmin && (
+                    <div className="sm:hidden flex items-center gap-1 pb-2.5 -mt-1">
+                        <Link
+                            href="/"
+                            className={`nav-link ${pathname === "/" ? "active" : ""}`}
+                        >
+                            Home
+                        </Link>
                         <Link
                             href="/admin"
                             className={`nav-link ${pathname === "/admin" ? "active" : ""}`}
                         >
                             Admin
                         </Link>
-                    )}
-                </div>
+                    </div>
+                )}
             </div>
         </nav>
     );

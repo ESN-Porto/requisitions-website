@@ -534,41 +534,31 @@
 
   /* ---------- My Items Banner ---------- */
   .my-items-banner {
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-lg);
-    padding: 20px 24px;
-    margin-bottom: 28px;
-    box-shadow: var(--shadow-xs);
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-bottom: 24px;
   }
 
-  .my-items-banner .items-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 12px;
-  }
-
-  .my-items-banner .item-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 16px;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-sm);
-    font-size: 13px;
+  .my-items-label {
     font-weight: 500;
-    color: var(--text-primary);
-    text-decoration: none;
-    transition: all 0.2s var(--ease-out);
+    margin-right: 4px;
   }
 
-  .my-items-banner .item-chip:hover {
-    background: var(--bg-hover);
-    border-color: rgba(0, 0, 0, 0.1);
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-sm);
+  .my-items-sep {
+    color: var(--text-muted);
+  }
+
+  .my-items-link {
+    color: var(--text-primary);
+    font-weight: 500;
+    text-decoration: underline;
+    text-decoration-color: var(--border-color);
+    text-underline-offset: 2px;
+    transition: text-decoration-color 0.15s ease;
+  }
+
+  .my-items-link:hover {
+    text-decoration-color: var(--text-primary);
   }
 
   /* ---------- Login Page ---------- */

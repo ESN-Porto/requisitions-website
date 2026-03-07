@@ -64,18 +64,15 @@ export default function HomePage() {
 
         {/* My Items Banner */}
         {myItems.length > 0 && (
-          <div className="my-items-banner">
-            <p className="text-[13px] font-semibold text-[var(--text-primary)]">
-              You have {myItems.length} item{myItems.length !== 1 ? "s" : ""}
-            </p>
-            <div className="items-list">
-              {myItems.map((item) => (
-                <a key={item.id} href={`/item/${item.id}`} className="item-chip">
-                  {item.name}
-                </a>
-              ))}
-            </div>
-          </div>
+          <p className="my-items-banner">
+            <span className="my-items-label">With you:</span>
+            {myItems.map((item, i) => (
+              <span key={item.id}>
+                {i > 0 && <span className="my-items-sep">, </span>}
+                <a href={`/item/${item.id}`} className="my-items-link">{item.name}</a>
+              </span>
+            ))}
+          </p>
         )}
 
         {/* Filters */}

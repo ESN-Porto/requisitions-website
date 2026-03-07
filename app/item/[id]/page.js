@@ -32,6 +32,7 @@ export default function ItemDetailPage() {
     const [showTransferModal, setShowTransferModal] = useState(false);
     const [actionLoading, setActionLoading] = useState(false);
     const [eventName, setEventName] = useState("");
+    const [note, setNote] = useState("");
     const [adminOverrideLoading, setAdminOverrideLoading] = useState(false);
     const [showAdminTransferModal, setShowAdminTransferModal] = useState(false);
     const [visibleCount, setVisibleCount] = useState(10);
@@ -98,9 +99,10 @@ export default function ItemDetailPage() {
                 fromUserId: null, fromUserName: "Office",
                 toUserId: user.uid, toUserName: userData.name,
                 action: "pickup", eventName: eventName.trim(),
+                note: note.trim() || null,
                 timestamp: serverTimestamp(),
             });
-            setEventName("");
+            setEventName(""); setNote("");
         } catch (e) { console.error("Pickup error:", e); }
         setActionLoading(false);
     };
@@ -121,9 +123,10 @@ export default function ItemDetailPage() {
                 fromUserId: user.uid, fromUserName: userData.name,
                 toUserId: null, toUserName: "Office",
                 action: "return", eventName: eventName.trim() || null,
+                note: note.trim() || null,
                 timestamp: serverTimestamp(),
             });
-            setEventName("");
+            setEventName(""); setNote("");
         } catch (e) { console.error("Return error:", e); }
         setActionLoading(false);
     };
@@ -144,9 +147,10 @@ export default function ItemDetailPage() {
                 fromUserId: user.uid, fromUserName: userData.name,
                 toUserId: toUser.id, toUserName: toUser.name,
                 action: "transfer", eventName: eventName.trim() || null,
+                note: note.trim() || null,
                 timestamp: serverTimestamp(),
             });
-            setEventName("");
+            setEventName(""); setNote("");
             setShowTransferModal(false);
         } catch (e) { console.error("Transfer error:", e); }
         setActionLoading(false);
@@ -336,13 +340,23 @@ export default function ItemDetailPage() {
                             </div>
                         ) : (
                             <div className="border-t border-[var(--border-subtle)] p-4 sm:px-6 sm:py-5">
-                                <div className="mb-3.5">
+                                <div className="mb-3">
                                     <label className="text-[13px] font-medium text-[var(--text-secondary)] mb-1.5 block">Event name</label>
                                     <input
                                         type="text"
                                         placeholder="e.g. Erasmus Welcome Week"
                                         value={eventName}
                                         onChange={(e) => setEventName(e.target.value)}
+                                        className="input-field !text-[14px]"
+                                    />
+                                </div>
+                                <div className="mb-3.5">
+                                    <label className="text-[13px] font-medium text-[var(--text-secondary)] mb-1.5 block">Note <span className="text-[var(--text-muted)] font-normal">(optional)</span></label>
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. Taking it to building B"
+                                        value={note}
+                                        onChange={(e) => setNote(e.target.value)}
                                         className="input-field !text-[14px]"
                                     />
                                 </div>
@@ -358,13 +372,23 @@ export default function ItemDetailPage() {
                         )
                     ) : isCurrentHolder ? (
                         <div className="border-t border-[var(--border-subtle)] p-4 sm:px-6 sm:py-5">
-                            <div className="mb-3.5">
+                            <div className="mb-3">
                                 <label className="text-[13px] font-medium text-[var(--text-secondary)] mb-1.5 block">Event name <span className="text-[var(--text-muted)] font-normal">(optional)</span></label>
                                 <input
                                     type="text"
                                     placeholder="e.g. Erasmus Welcome Week"
                                     value={eventName}
                                     onChange={(e) => setEventName(e.target.value)}
+                                    className="input-field !text-[14px]"
+                                />
+                            </div>
+                            <div className="mb-3.5">
+                                <label className="text-[13px] font-medium text-[var(--text-secondary)] mb-1.5 block">Note <span className="text-[var(--text-muted)] font-normal">(optional)</span></label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. Left it on the shelf in room 2.1"
+                                    value={note}
+                                    onChange={(e) => setNote(e.target.value)}
                                     className="input-field !text-[14px]"
                                 />
                             </div>
@@ -489,6 +513,9 @@ export default function ItemDetailPage() {
                                         </p>
                                         {transfer.eventName && (
                                             <p className="text-[12px] mt-1 text-[var(--esn-magenta)] font-medium">{transfer.eventName}</p>
+                                        )}
+                                        {transfer.note && (
+                                            <p className="text-[12px] mt-0.5 text-[var(--text-muted)] italic">{transfer.note}</p>
                                         )}
                                         <div className="flex items-center gap-2 mt-1">
                                             <p className="text-[12px] text-[var(--text-muted)]">{formatDate(transfer.timestamp)}</p>

@@ -294,66 +294,29 @@ export default function ItemDetailPage() {
                     </div>
                 </div>
 
-                {/* Status + Actions — the hero section */}
-                <div className="card p-4 sm:p-6 mt-3 sm:mt-4">
-                    {isInOffice ? (
-                        /* Available in office */
-                        <div>
-                            <div className="flex items-center gap-4 mb-5">
-                                <div className="w-12 h-12 rounded-full bg-[var(--status-office-bg)] flex items-center justify-center flex-shrink-0">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--status-office)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                {/* Status + Actions */}
+                <div className="card mt-3 sm:mt-4 overflow-hidden">
+                    {/* Status row */}
+                    <div className="flex items-center gap-3.5 p-4 sm:px-6 sm:py-5">
+                        {isInOffice ? (
+                            <>
+                                <div className="w-10 h-10 rounded-full bg-[var(--bg-secondary)] flex items-center justify-center flex-shrink-0">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                         <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
                                         <polyline points="9 22 9 12 15 12 15 22" />
                                     </svg>
                                 </div>
                                 <div>
-                                    <p className="font-semibold text-[15px]">Available in the office</p>
+                                    <p className="font-semibold text-[15px] text-[var(--text-primary)]">Available in the office</p>
                                     <p className="text-[13px] text-[var(--text-muted)]">Ready to be picked up</p>
                                 </div>
-                            </div>
-
-                            {!user ? (
-                                <div className="mt-4 text-[14px] text-[var(--text-muted)] p-4 rounded-xl bg-[var(--bg-secondary)] text-center">
-                                    Please <button onClick={signInWithGoogle} className="font-medium text-[var(--text-primary)] underline">sign in</button> to pick up this item.
-                                </div>
-                            ) : (
-                                <>
-                                    {/* Event name — required */}
-                                    <div className="mb-4">
-                                        <label className="text-[13px] font-medium text-[var(--text-secondary)] mb-1.5 block">Event name</label>
-                                        <input
-                                            type="text"
-                                            placeholder="e.g. Erasmus Welcome Week"
-                                            value={eventName}
-                                            onChange={(e) => setEventName(e.target.value)}
-                                            className="input-field !text-[14px]"
-                                        />
-                                    </div>
-
-                                    <button
-                                        onClick={handlePickup}
-                                        disabled={actionLoading || !eventName.trim()}
-                                        className="btn-action pickup disabled:opacity-40 disabled:cursor-not-allowed"
-                                    >
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                                            <polyline points="17 8 12 3 7 8" />
-                                            <line x1="12" y1="3" x2="12" y2="15" />
-                                        </svg>
-                                        Pick up from office
-                                        {actionLoading && <span className="ml-auto spinner !w-4 !h-4 !border-2"></span>}
-                                    </button>
-                                </>
-                            )}
-                        </div>
-                    ) : (
-                        /* Checked out to someone */
-                        <div>
-                            <div className="flex items-center gap-4 mb-5">
+                            </>
+                        ) : (
+                            <>
                                 {holderPhoto ? (
-                                    <img src={holderPhoto} alt={item.currentHolderName} className="w-12 h-12 rounded-full ring-2 ring-[var(--status-out-border)] flex-shrink-0" referrerPolicy="no-referrer" />
+                                    <img src={holderPhoto} alt={item.currentHolderName} className="w-10 h-10 rounded-full ring-1 ring-black/5 flex-shrink-0" referrerPolicy="no-referrer" />
                                 ) : (
-                                    <div className="w-12 h-12 rounded-full bg-[var(--status-out-bg)] flex items-center justify-center text-lg font-semibold text-[var(--status-out)] flex-shrink-0">
+                                    <div className="w-10 h-10 rounded-full bg-[var(--bg-secondary)] flex items-center justify-center text-sm font-semibold text-[var(--text-secondary)] flex-shrink-0">
                                         {item.currentHolderName?.[0]}
                                     </div>
                                 )}
@@ -361,102 +324,100 @@ export default function ItemDetailPage() {
                                     <p className="text-[13px] text-[var(--text-muted)]">Currently with</p>
                                     <p className="font-semibold text-[15px]">{item.currentHolderName || "Unknown"}</p>
                                 </div>
+                            </>
+                        )}
+                    </div>
+
+                    {/* Actions */}
+                    {isInOffice ? (
+                        !user ? (
+                            <div className="px-4 sm:px-6 pb-5 text-[14px] text-[var(--text-muted)]">
+                                <button onClick={signInWithGoogle} className="font-medium text-[var(--text-primary)] underline">Sign in</button> to pick up this item.
                             </div>
-
-                            {isCurrentHolder ? (
-                                <div>
-                                    {/* Event name — optional for returning/transferring */}
-                                    <div className="mb-4">
-                                        <label className="text-[13px] font-medium text-[var(--text-secondary)] mb-1.5 block">Event name (Optional)</label>
-                                        <input
-                                            type="text"
-                                            placeholder="e.g. Erasmus Welcome Week"
-                                            value={eventName}
-                                            onChange={(e) => setEventName(e.target.value)}
-                                            className="input-field !text-[14px]"
-                                        />
-                                    </div>
-
-                                    <div className="space-y-2.5">
-                                        <button
-                                            onClick={handleReturn}
-                                            disabled={actionLoading}
-                                            className="btn-action return-item disabled:opacity-40 disabled:cursor-not-allowed"
-                                        >
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                                                <polyline points="7 10 12 15 17 10" />
-                                                <line x1="12" y1="15" x2="12" y2="3" />
-                                            </svg>
-                                            Return to office
-                                            {actionLoading && <span className="ml-auto spinner !w-4 !h-4 !border-2"></span>}
-                                        </button>
-                                        <button
-                                            onClick={() => setShowTransferModal(true)}
-                                            disabled={actionLoading}
-                                            className="btn-action transfer disabled:opacity-40 disabled:cursor-not-allowed"
-                                        >
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                                                <circle cx="8.5" cy="7" r="4" />
-                                                <line x1="20" y1="8" x2="20" y2="14" />
-                                                <line x1="23" y1="11" x2="17" y2="11" />
-                                            </svg>
-                                            Pass to someone
-                                        </button>
-                                    </div>
+                        ) : (
+                            <div className="border-t border-[var(--border-subtle)] p-4 sm:px-6 sm:py-5">
+                                <div className="mb-3.5">
+                                    <label className="text-[13px] font-medium text-[var(--text-secondary)] mb-1.5 block">Event name</label>
+                                    <input
+                                        type="text"
+                                        placeholder="e.g. Erasmus Welcome Week"
+                                        value={eventName}
+                                        onChange={(e) => setEventName(e.target.value)}
+                                        className="input-field !text-[14px]"
+                                    />
                                 </div>
-                            ) : (
-                                <div className="text-[14px] text-[var(--text-muted)] p-4 rounded-xl bg-[var(--bg-secondary)] text-center">
-                                    Only <span className="font-medium text-[var(--text-primary)]">{item.currentHolderName}</span> can return or transfer this item.
-                                </div>
-                            )}
+                                <button
+                                    onClick={handlePickup}
+                                    disabled={actionLoading || !eventName.trim()}
+                                    className="btn-action-primary disabled:opacity-40 disabled:cursor-not-allowed"
+                                >
+                                    Pick up from office
+                                    {actionLoading && <span className="ml-auto spinner !w-4 !h-4 !border-2"></span>}
+                                </button>
+                            </div>
+                        )
+                    ) : isCurrentHolder ? (
+                        <div className="border-t border-[var(--border-subtle)] p-4 sm:px-6 sm:py-5">
+                            <div className="mb-3.5">
+                                <label className="text-[13px] font-medium text-[var(--text-secondary)] mb-1.5 block">Event name <span className="text-[var(--text-muted)] font-normal">(optional)</span></label>
+                                <input
+                                    type="text"
+                                    placeholder="e.g. Erasmus Welcome Week"
+                                    value={eventName}
+                                    onChange={(e) => setEventName(e.target.value)}
+                                    className="input-field !text-[14px]"
+                                />
+                            </div>
+                            <div className="flex gap-2.5">
+                                <button
+                                    onClick={handleReturn}
+                                    disabled={actionLoading}
+                                    className="btn-action-primary flex-1 disabled:opacity-40 disabled:cursor-not-allowed"
+                                >
+                                    Return to office
+                                    {actionLoading && <span className="ml-auto spinner !w-4 !h-4 !border-2"></span>}
+                                </button>
+                                <button
+                                    onClick={() => setShowTransferModal(true)}
+                                    disabled={actionLoading}
+                                    className="btn-action-secondary flex-1 disabled:opacity-40 disabled:cursor-not-allowed"
+                                >
+                                    Pass to someone
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="border-t border-[var(--border-subtle)] px-4 sm:px-6 py-4">
+                            <p className="text-[13px] text-[var(--text-muted)]">
+                                Only <span className="font-medium text-[var(--text-secondary)]">{item.currentHolderName}</span> can return or transfer this item.
+                            </p>
                         </div>
                     )}
-                </div>
 
-                {/* Admin Override */}
-                {isAdmin && user && (
-                    <div className="card p-4 sm:p-6 mt-3 sm:mt-4" style={{ borderColor: "#fde68a", borderWidth: "1px" }}>
-                        <div className="flex items-center gap-2 mb-4">
-                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#b45309" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                            </svg>
-                            <span className="text-[13px] font-semibold" style={{ color: "#b45309" }}>Admin Override</span>
-                        </div>
-                        <div className="space-y-2.5">
+                    {/* Admin actions — inside the same card */}
+                    {isAdmin && user && (
+                        <div className="border-t border-[var(--border-subtle)] px-4 sm:px-6 py-3.5 flex items-center gap-2.5">
+                            <span className="text-[12px] font-medium text-[var(--text-muted)] uppercase tracking-wider mr-auto">Admin</span>
                             {!isInOffice && (
                                 <button
                                     onClick={handleAdminReturn}
                                     disabled={adminOverrideLoading}
-                                    className="btn-action return-item disabled:opacity-40 disabled:cursor-not-allowed"
+                                    className="btn-action-inline disabled:opacity-40 disabled:cursor-not-allowed"
                                 >
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                                        <polyline points="7 10 12 15 17 10" />
-                                        <line x1="12" y1="15" x2="12" y2="3" />
-                                    </svg>
-                                    Force return to office
-                                    {adminOverrideLoading && <span className="ml-auto spinner !w-4 !h-4 !border-2"></span>}
+                                    Force return
+                                    {adminOverrideLoading && <span className="spinner !w-3.5 !h-3.5 !border-2"></span>}
                                 </button>
                             )}
                             <button
                                 onClick={() => setShowAdminTransferModal(true)}
                                 disabled={adminOverrideLoading}
-                                className="btn-action transfer disabled:opacity-40 disabled:cursor-not-allowed"
+                                className="btn-action-inline disabled:opacity-40 disabled:cursor-not-allowed"
                             >
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                                    <circle cx="8.5" cy="7" r="4" />
-                                    <line x1="20" y1="8" x2="20" y2="14" />
-                                    <line x1="23" y1="11" x2="17" y2="11" />
-                                </svg>
-                                {isInOffice ? "Assign to someone" : "Reassign to someone"}
+                                {isInOffice ? "Assign to someone" : "Reassign"}
                             </button>
                         </div>
-                    </div>
-                )}
+                    )}
+                </div>
 
                 {/* Transfer History */}
                 <div className="mt-6 sm:mt-8">

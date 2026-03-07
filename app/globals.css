@@ -283,70 +283,85 @@
   }
 
   /* Action Buttons (Item Detail) */
-  .btn-action {
+  .btn-action-primary {
     display: flex;
     align-items: center;
-    gap: 14px;
+    justify-content: center;
+    gap: 8px;
     width: 100%;
-    padding: 16px 20px;
+    padding: 12px 20px;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s var(--ease-out);
+    background: var(--text-primary);
+    color: #ffffff;
+    font-family: inherit;
+  }
+
+  .btn-action-primary:hover {
+    opacity: 0.85;
+  }
+
+  .btn-action-primary:active {
+    transform: scale(0.98);
+  }
+
+  .btn-action-secondary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 12px 20px;
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
     font-size: 15px;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s var(--ease-out);
+    transition: all 0.15s var(--ease-out);
     background: var(--bg-card);
     color: var(--text-primary);
     font-family: inherit;
   }
 
-  .btn-action:hover {
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-md);
+  .btn-action-secondary:hover {
+    background: var(--bg-secondary);
   }
 
-  .btn-action:active {
-    transform: translateY(0);
+  .btn-action-secondary:active {
+    transform: scale(0.98);
   }
 
-  .btn-action.pickup {
-    border-color: var(--status-office-border);
-    background: var(--status-office-bg);
-    color: #248a3d;
+  .btn-action-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s var(--ease-out);
+    background: var(--bg-card);
+    color: var(--text-secondary);
+    font-family: inherit;
   }
 
-  .btn-action.pickup:hover {
-    background: #e3f7e8;
-    box-shadow: 0 4px 16px rgba(52, 199, 89, 0.1);
+  .btn-action-inline:hover {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
   }
 
-  .btn-action.return-item {
-    border-color: var(--status-out-border);
-    background: var(--status-out-bg);
-    color: #8a6d3b;
-  }
-
-  .btn-action.return-item:hover {
-    background: #fff0d4;
-    box-shadow: 0 4px 16px rgba(255, 159, 10, 0.1);
-  }
-
-  .btn-action.transfer {
-    border-color: #c2d9f7;
-    background: #f0f6ff;
-    color: #0055d4;
-  }
-
-  .btn-action.transfer:hover {
-    background: #e0ecff;
-    box-shadow: 0 4px 16px rgba(0, 122, 255, 0.08);
-  }
-
-  .btn-action:disabled {
+  .btn-action-primary:disabled,
+  .btn-action-secondary:disabled,
+  .btn-action-inline:disabled {
     opacity: 0.4;
     cursor: not-allowed;
     transform: none !important;
-    box-shadow: none !important;
   }
 
   /* ---------- Badges ---------- */

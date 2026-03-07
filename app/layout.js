@@ -1,5 +1,6 @@
 import { Inter } from "next/font/google";
 import { AuthProvider } from "@/contexts/AuthContext";
+import AuthGate from "@/components/AuthGate";
 import "./globals.css";
 
 const inter = Inter({
@@ -24,7 +25,9 @@ export default function RootLayout({ children }) {
                 style={{ fontFamily: "var(--font-inter), system-ui, sans-serif" }}
                 suppressHydrationWarning
             >
-                <AuthProvider>{children}</AuthProvider>
+                <AuthProvider>
+                    <AuthGate>{children}</AuthGate>
+                </AuthProvider>
             </body>
         </html>
     );

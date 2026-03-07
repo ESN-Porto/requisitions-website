@@ -8,7 +8,7 @@ import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
 import { getFirebaseDb } from "@/lib/firebase";
 
 export default function HomePage() {
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
   const [items, setItems] = useState([]);
   const [categories, setCategories] = useState([]);
   const [itemsLoading, setItemsLoading] = useState(true);
@@ -32,14 +32,6 @@ export default function HomePage() {
 
     return () => { unsubscribe(); unsubCategories(); };
   }, []);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="spinner"></div>
-      </div>
-    );
-  }
 
   const filteredItems =
     filter === "all" ? items : items.filter((item) => item.type === filter);

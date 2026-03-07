@@ -570,6 +570,231 @@
     transform: translateY(-1px);
     box-shadow: var(--shadow-sm);
   }
+
+  /* ---------- Login Page ---------- */
+
+  /* Container: full viewport with photo behind */
+  .login-container {
+    position: relative;
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    overflow: hidden;
+  }
+
+  @media (min-width: 768px) {
+    .login-container {
+      flex-direction: row;
+      justify-content: stretch;
+    }
+  }
+
+  /* Background photo — always visible */
+  .login-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+  }
+
+  @media (min-width: 768px) {
+    .login-bg {
+      position: relative;
+      width: 50%;
+      flex-shrink: 0;
+    }
+  }
+
+  .login-bg-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: linear-gradient(
+      to top,
+      rgba(0, 0, 0, 0.7) 0%,
+      rgba(0, 0, 0, 0.3) 40%,
+      rgba(0, 0, 0, 0.08) 100%
+    );
+  }
+
+  @media (min-width: 768px) {
+    .login-bg-overlay {
+      background: linear-gradient(
+        to top,
+        rgba(0, 0, 0, 0.6) 0%,
+        rgba(0, 0, 0, 0.1) 50%,
+        rgba(0, 0, 0, 0.03) 100%
+      );
+    }
+  }
+
+  /* Mobile info text — sits above card on top of photo */
+  .login-mobile-info {
+    position: relative;
+    z-index: 2;
+    padding: 0 28px;
+    margin-bottom: 20px;
+    animation: fadeIn 0.6s var(--ease-out);
+  }
+
+  @media (min-width: 768px) {
+    .login-mobile-info {
+      display: none;
+    }
+  }
+
+  .login-mobile-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: -0.03em;
+  }
+
+  .login-mobile-subtitle {
+    font-size: 15px;
+    color: rgba(255, 255, 255, 0.75);
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+
+  /* Desktop info text — bottom-left on photo */
+  .login-desktop-info {
+    display: none;
+  }
+
+  @media (min-width: 768px) {
+    .login-desktop-info {
+      display: block;
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 50%;
+      padding: 40px;
+      z-index: 2;
+    }
+  }
+
+  .login-desktop-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: -0.02em;
+  }
+
+  .login-desktop-subtitle {
+    font-size: 15px;
+    color: rgba(255, 255, 255, 0.8);
+    margin-top: 6px;
+    line-height: 1.5;
+  }
+
+  /* Card wrapper */
+  .login-card-wrapper {
+    position: relative;
+    z-index: 3;
+    padding: 0 20px 32px;
+    animation: loginSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @media (min-width: 768px) {
+    .login-card-wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 50%;
+      padding: 48px;
+      background: var(--bg-primary);
+      animation: none;
+    }
+  }
+
+  /* The card itself */
+  .login-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    padding: 36px 28px 28px;
+    box-shadow: var(--shadow-xl);
+    max-width: 380px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  @media (min-width: 768px) {
+    .login-card {
+      background: transparent;
+      box-shadow: none;
+      padding: 0;
+      border-radius: 0;
+    }
+  }
+
+  .login-card-heading {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-top: 20px;
+    letter-spacing: -0.02em;
+  }
+
+  .login-card-sub {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-top: 6px;
+  }
+
+  .login-google-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    margin-top: 28px;
+    padding: 13px 24px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s var(--ease-out);
+    box-shadow: var(--shadow-sm);
+    font-family: inherit;
+  }
+
+  .login-google-btn:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+    border-color: rgba(0, 0, 0, 0.12);
+  }
+
+  .login-google-btn:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-xs);
+  }
+
+  .login-card-terms {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 18px;
+    line-height: 1.5;
+  }
+
+  @keyframes loginSlideUp {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 }
 
 /* =========================================================

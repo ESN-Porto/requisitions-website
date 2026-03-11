@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/Navbar";
 import Link from "next/link";
 import { QRCodeCanvas } from "qrcode.react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
     collection,
@@ -18,17 +18,6 @@ import {
     serverTimestamp,
 } from "firebase/firestore";
 import { getFirebaseDb } from "@/lib/firebase";
-
-const COLOR_PRESETS = [
-    { color: "#0055d4", bg: "#f0f6ff", border: "#c2d9f7", label: "Blue" },
-    { color: "#7c3aed", bg: "#f6f0ff", border: "#e0d0f7", label: "Purple" },
-    { color: "#c2410c", bg: "#fff5ee", border: "#fdd8be", label: "Orange" },
-    { color: "#248a3d", bg: "#f0faf2", border: "#c6f0ce", label: "Green" },
-    { color: "#d4145a", bg: "#fff0f5", border: "#fccfe0", label: "Pink" },
-    { color: "#0891b2", bg: "#ecfeff", border: "#a5f3fc", label: "Cyan" },
-    { color: "#b45309", bg: "#fffbeb", border: "#fde68a", label: "Amber" },
-    { color: "#64748b", bg: "#f1f5f9", border: "#cbd5e1", label: "Slate" },
-];
 
 export default function AdminPage() {
     const { user, userData, loading, isAdmin } = useAuth();
@@ -44,13 +33,27 @@ export default function AdminPage() {
     const [saving, setSaving] = useState(false);
     const [deleteConfirm, setDeleteConfirm] = useState(null);
     const [qrItem, setQrItem] = useState(null);
+    const [actionMenuOpen, setActionMenuOpen] = useState(null); // item/cat ID or null
 
     // Category form state
     const [showCategoryForm, setShowCategoryForm] = useState(false);
     const [editingCategory, setEditingCategory] = useState(null);
-    const [categoryFormData, setCategoryFormData] = useState({ name: "", colorIndex: 0 });
+    const [categoryFormData, setCategoryFormData] = useState({ name: "" });
     const [savingCategory, setSavingCategory] = useState(false);
     const [deleteCategoryConfirm, setDeleteCategoryConfirm] = useState(null);
+
+    // Click-away listener for action menus
+    const menuRef = useRef(null);
+    const closeMenu = useCallback(() => setActionMenuOpen(null), []);
+
+    useEffect(() => {
+        if (actionMenuOpen === null) return;
+        const handleClick = (e) => {
+            if (menuRef.current && !menuRef.current.contains(e.target)) closeMenu();
+        };
+        document.addEventListener("mousedown", handleClick);
+        return () => document.removeEventListener("mousedown", handleClick);
+    }, [actionMenuOpen, closeMenu]);
 
     useEffect(() => {
         if (!user) return;
@@ -105,6 +108,7 @@ export default function AdminPage() {
         setFormData({ name: item.name, type: item.type });
         setImageFile(null);
         setShowItemForm(true);
+        setActionMenuOpen(null);
     };
 
     const handleSaveItem = async () => {
@@ -113,21 +117,14 @@ export default function AdminPage() {
         try {
             let photoURL = editingItem?.photoURL || null;
             if (imageFile) {
-                // 1. Get the current user's secure ID token
-                const token = await user.getIdToken(); 
-                
+                const token = await user.getIdToken();
                 const fd = new FormData();
                 fd.append("file", imageFile);
-                
-                // 2. Attach it to the Authorization header
-                const res = await fetch("/api/upload", { 
-                    method: "POST", 
-                    headers: {
-                        "Authorization": `Bearer ${token}`
-                    },
-                    body: fd 
+                const res = await fetch("/api/upload", {
+                    method: "POST",
+                    headers: { "Authorization": `Bearer ${token}` },
+                    body: fd
                 });
-                
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
                 photoURL = data.url;
@@ -156,49 +153,32 @@ export default function AdminPage() {
         try {
             await deleteDoc(doc(getFirebaseDb(), "items", itemId));
             setDeleteConfirm(null);
+            setActionMenuOpen(null);
         } catch (e) {
             console.error("Delete error:", e);
         }
     };
 
     // ── Category form helpers ──
-    const getCategoryBadgeStyle = (cat) => ({
-        background: cat.bgColor || "#f5f5f7",
-        color: cat.color || "#6e6e73",
-        border: `1px solid ${cat.borderColor || "#e8e8ed"}`,
-    });
-
     const openAddCategoryForm = () => {
         setEditingCategory(null);
-        setCategoryFormData({ name: "", colorIndex: 0 });
+        setCategoryFormData({ name: "" });
         setShowCategoryForm(true);
     };
 
     const openEditCategoryForm = (cat) => {
         setEditingCategory(cat);
-        const colorIdx = COLOR_PRESETS.findIndex(
-            (p) => p.color === cat.color
-        );
-        setCategoryFormData({
-            name: cat.name,
-            colorIndex: colorIdx >= 0 ? colorIdx : 0,
-        });
+        setCategoryFormData({ name: cat.name });
         setShowCategoryForm(true);
+        setActionMenuOpen(null);
     };
 
     const handleSaveCategory = async () => {
         if (!categoryFormData.name.trim()) return;
         setSavingCategory(true);
         try {
-            const preset = COLOR_PRESETS[categoryFormData.colorIndex];
             const key = categoryFormData.name.trim().toLowerCase().replace(/\s+/g, "-");
-            const payload = {
-                name: categoryFormData.name.trim(),
-                key,
-                color: preset.color,
-                bgColor: preset.bg,
-                borderColor: preset.border,
-            };
+            const payload = { name: categoryFormData.name.trim(), key };
             if (editingCategory) {
                 await updateDoc(doc(getFirebaseDb(), "categories", editingCategory.id), payload);
             } else {
@@ -209,7 +189,7 @@ export default function AdminPage() {
             }
             setShowCategoryForm(false);
             setEditingCategory(null);
-            setCategoryFormData({ name: "", colorIndex: 0 });
+            setCategoryFormData({ name: "" });
         } catch (e) {
             console.error("Save category error:", e);
         }
@@ -220,6 +200,7 @@ export default function AdminPage() {
         try {
             await deleteDoc(doc(getFirebaseDb(), "categories", catId));
             setDeleteCategoryConfirm(null);
+            setActionMenuOpen(null);
         } catch (e) {
             console.error("Delete category error:", e);
         }
@@ -236,17 +217,112 @@ export default function AdminPage() {
 
     const getCategoryForType = (type) => categories.find((c) => c.key === type);
 
+    // ── Inline SVG icons ──
+    const QrIcon = () => (
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+            <rect x="5" y="5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="16" y="5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="5" y="16" width="3" height="3" fill="currentColor" stroke="none"/>
+            <path d="M14 14h3v3h-3z" fill="currentColor" stroke="none"/><path d="M17 17h3v3h-3z" fill="currentColor" stroke="none"/><path d="M14 20h3" /><path d="M20 14v3" />
+        </svg>
+    );
+
+    const EditIcon = () => (
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+        </svg>
+    );
+
+    const TrashIcon = () => (
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+        </svg>
+    );
+
+    // Shared actions dropdown for items
+    const ItemActionsMenu = ({ item }) => (
+        <div className="admin-actions-wrap" ref={actionMenuOpen === item.id ? menuRef : null}>
+            <button
+                className="admin-more-btn"
+                onClick={(e) => { e.stopPropagation(); setActionMenuOpen(actionMenuOpen === item.id ? null : item.id); }}
+            >
+                ⋯
+            </button>
+            {actionMenuOpen === item.id && (
+                <div className="admin-actions-menu">
+                    <button className="admin-actions-item" onClick={() => { setQrItem(item); setActionMenuOpen(null); }}>
+                        <QrIcon /> QR Code
+                    </button>
+                    <button className="admin-actions-item" onClick={() => openEditForm(item)}>
+                        <EditIcon /> Edit
+                    </button>
+                    {deleteConfirm === item.id ? (
+                        <>
+                            <button className="admin-actions-item admin-actions-danger" onClick={() => handleDeleteItem(item.id)}>
+                                Confirm Delete
+                            </button>
+                            <button className="admin-actions-item" onClick={() => { setDeleteConfirm(null); setActionMenuOpen(null); }}>
+                                Cancel
+                            </button>
+                        </>
+                    ) : (
+                        <button className="admin-actions-item admin-actions-danger" onClick={() => setDeleteConfirm(item.id)}>
+                            <TrashIcon /> Delete
+                        </button>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+
+    // Shared actions dropdown for categories
+    const CatActionsMenu = ({ cat }) => {
+        const menuId = `cat-${cat.id}`;
+        return (
+            <div className="admin-actions-wrap" ref={actionMenuOpen === menuId ? menuRef : null}>
+                <button
+                    className="admin-more-btn"
+                    onClick={(e) => { e.stopPropagation(); setActionMenuOpen(actionMenuOpen === menuId ? null : menuId); }}
+                >
+                    ⋯
+                </button>
+                {actionMenuOpen === menuId && (
+                    <div className="admin-actions-menu">
+                        <button className="admin-actions-item" onClick={() => openEditCategoryForm(cat)}>
+                            <EditIcon /> Edit
+                        </button>
+                        {deleteCategoryConfirm === cat.id ? (
+                            <>
+                                <button className="admin-actions-item admin-actions-danger" onClick={() => handleDeleteCategory(cat.id)}>
+                                    Confirm Delete
+                                </button>
+                                <button className="admin-actions-item" onClick={() => { setDeleteCategoryConfirm(null); setActionMenuOpen(null); }}>
+                                    Cancel
+                                </button>
+                            </>
+                        ) : (
+                            <button className="admin-actions-item admin-actions-danger" onClick={() => setDeleteCategoryConfirm(cat.id)}>
+                                <TrashIcon /> Delete
+                            </button>
+                        )}
+                    </div>
+                )}
+            </div>
+        );
+    };
+
     return (
         <div className="min-h-screen">
             <Navbar />
-            <main className="max-w-3xl mx-auto px-4 sm:px-8 py-5 sm:py-8">
-                <div className="mb-5 sm:mb-8">
-                    <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Admin</h1>
-                    <p className="text-[14px] sm:text-[15px] text-[var(--text-muted)] mt-1">Manage requisitions, categories and users</p>
+            <main className="max-w-3xl mx-auto px-4 sm:px-8 py-6 sm:py-10">
+                {/* Header — matches home page style */}
+                <div className="mb-6 sm:mb-10">
+                    <h1 className="home-title">Admin</h1>
+                    <p className="home-subtitle">Manage requisitions, categories and users</p>
                 </div>
 
                 {/* Tabs */}
-                <div className="flex gap-2 mb-5 sm:mb-6">
+                <div className="filter-bar">
                     {[
                         { key: "items", label: `Requisitions (${items.length})` },
                         { key: "categories", label: `Categories (${categories.length})` },
@@ -282,7 +358,7 @@ export default function AdminPage() {
                                 <p className="text-sm text-[var(--text-muted)] mt-1">Add your first requisition</p>
                             </div>
                         ) : (
-                            <div className="card overflow-hidden">
+                            <div className="card admin-list">
                                 {items.map((item, index) => {
                                     const cat = getCategoryForType(item.type);
                                     return (
@@ -301,38 +377,21 @@ export default function AdminPage() {
                                                 )}
                                                 <div className="min-w-0">
                                                     <p className="font-medium text-[13px] sm:text-[14px] truncate">{item.name}</p>
-                                                    <div className="flex items-center gap-1.5 sm:gap-2 mt-1">
-                                                        <span
-                                                            className="type-badge"
-                                                            style={cat ? getCategoryBadgeStyle(cat) : undefined}
-                                                        >
-                                                            {item.type}
+                                                    <div className="flex items-center gap-1.5 mt-1">
+                                                        <span className="text-[11px] sm:text-[12px] text-[var(--text-muted)]">
+                                                            {cat?.name || item.type}
                                                         </span>
-                                                        <span className={`status-badge text-[11px] ${item.status === "office" ? "status-office" : "status-out"}`}>
-                                                            <span className={`status-dot ${item.status === "office" ? "office" : "out"}`}></span>
-                                                            <span className="hidden sm:inline">{item.status === "office" ? "Office" : item.currentHolderName}</span>
+                                                        <span className="text-[11px] text-[var(--text-muted)]">·</span>
+                                                        <span className="text-[11px] sm:text-[12px] text-[var(--text-muted)]">
+                                                            {item.status === "office" ? "In Office" : item.currentHolderName}
                                                         </span>
                                                     </div>
                                                 </div>
                                             </Link>
-                                            <div className="flex gap-1.5 sm:gap-2 flex-shrink-0">
-                                                <button onClick={() => setQrItem(item)} className="btn-secondary !py-1.5 !px-2.5 sm:!py-2 sm:!px-3.5 !text-[12px] sm:!text-[13px]" title="QR Code">
-                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                        <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
-                                                        <rect x="5" y="5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="16" y="5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="5" y="16" width="3" height="3" fill="currentColor" stroke="none"/>
-                                                        <path d="M14 14h3v3h-3z" fill="currentColor" stroke="none"/><path d="M17 17h3v3h-3z" fill="currentColor" stroke="none"/><path d="M14 20h3" /><path d="M20 14v3" />
-                                                    </svg>
-                                                </button>
-                                                <button onClick={() => openEditForm(item)} className="btn-secondary !py-1.5 !px-2.5 sm:!py-2 sm:!px-3.5 !text-[12px] sm:!text-[13px]">Edit</button>
-                                                {deleteConfirm === item.id ? (
-                                                    <>
-                                                        <button onClick={() => handleDeleteItem(item.id)} className="btn-danger !py-1.5 !px-2.5 sm:!py-2 sm:!px-3.5 !text-[12px] sm:!text-[13px]">Confirm</button>
-                                                        <button onClick={() => setDeleteConfirm(null)} className="btn-secondary !py-1.5 !px-2.5 sm:!py-2 sm:!px-3.5 !text-[12px] sm:!text-[13px]">Cancel</button>
-                                                    </>
-                                                ) : (
-                                                    <button onClick={() => setDeleteConfirm(item.id)} className="btn-danger !py-1.5 !px-2.5 sm:!py-2 sm:!px-3.5 !text-[12px] sm:!text-[13px]">Delete</button>
-                                                )}
-                                            </div>
+
+
+                                            {/* ⋯ actions menu */}
+                                            <ItemActionsMenu item={item} />
                                         </div>
                                     );
                                 })}
@@ -355,7 +414,7 @@ export default function AdminPage() {
                                 <p className="text-sm text-[var(--text-muted)] mt-1">Add your first category</p>
                             </div>
                         ) : (
-                            <div className="card overflow-hidden">
+                            <div className="card admin-list">
                                 {categories.map((cat, index) => {
                                     const itemCount = items.filter((i) => i.type === cat.key).length;
                                     return (
@@ -364,14 +423,8 @@ export default function AdminPage() {
                                             className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-4 ${index !== categories.length - 1 ? "border-b border-[var(--border-subtle)]" : ""
                                                 }`}
                                         >
-                                            <div
-                                                className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center flex-shrink-0"
-                                                style={{ background: cat.bgColor, border: `1px solid ${cat.borderColor}` }}
-                                            >
-                                                <div
-                                                    className="w-4 h-4 rounded-full"
-                                                    style={{ background: cat.color }}
-                                                ></div>
+                                            <div className="admin-cat-icon">
+                                                {cat.name?.[0]?.toUpperCase() || "?"}
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <p className="font-medium text-[13px] sm:text-[14px] truncate">{cat.name}</p>
@@ -379,17 +432,10 @@ export default function AdminPage() {
                                                     {itemCount} item{itemCount !== 1 ? "s" : ""}
                                                 </p>
                                             </div>
-                                            <div className="flex gap-1.5 sm:gap-2 flex-shrink-0">
-                                                <button onClick={() => openEditCategoryForm(cat)} className="btn-secondary !py-1.5 !px-2.5 sm:!py-2 sm:!px-3.5 !text-[12px] sm:!text-[13px]">Edit</button>
-                                                {deleteCategoryConfirm === cat.id ? (
-                                                    <>
-                                                        <button onClick={() => handleDeleteCategory(cat.id)} className="btn-danger !py-1.5 !px-2.5 sm:!py-2 sm:!px-3.5 !text-[12px] sm:!text-[13px]">Confirm</button>
-                                                        <button onClick={() => setDeleteCategoryConfirm(null)} className="btn-secondary !py-1.5 !px-2.5 sm:!py-2 sm:!px-3.5 !text-[12px] sm:!text-[13px]">Cancel</button>
-                                                    </>
-                                                ) : (
-                                                    <button onClick={() => setDeleteCategoryConfirm(cat.id)} className="btn-danger !py-1.5 !px-2.5 sm:!py-2 sm:!px-3.5 !text-[12px] sm:!text-[13px]">Delete</button>
-                                                )}
-                                            </div>
+
+
+                                            {/* ⋯ actions menu */}
+                                            <CatActionsMenu cat={cat} />
                                         </div>
                                     );
                                 })}
@@ -426,9 +472,8 @@ export default function AdminPage() {
                                         {u.role}
                                     </span>
                                     {u.id !== user.uid && (
-                                        <button 
-                                            onClick={() => toggleRole(u.id, u.role)} 
-                                            // Disables if they aren't an admin currently AND their email is not an esnporto.org email
+                                        <button
+                                            onClick={() => toggleRole(u.id, u.role)}
                                             disabled={u.role !== "admin" && !u.email?.toLowerCase().endsWith("@esnporto.org")}
                                             className="btn-secondary !py-2 !px-3.5 !text-[13px] disabled:opacity-40 disabled:cursor-not-allowed"
                                         >
@@ -510,7 +555,7 @@ export default function AdminPage() {
                     </div>
                 )}
 
-                {/* Category Form Modal */}
+                {/* Category Form Modal — simplified, no color picker */}
                 {showCategoryForm && (
                     <div className="modal-overlay" onClick={() => setShowCategoryForm(false)}>
                         <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -545,49 +590,6 @@ export default function AdminPage() {
                                         </p>
                                     )}
                                 </div>
-                                <div>
-                                    <label className="text-[13px] font-medium text-[var(--text-secondary)] mb-1.5 block">Color</label>
-                                    <div className="flex flex-wrap gap-2.5">
-                                        {COLOR_PRESETS.map((preset, idx) => (
-                                            <button
-                                                key={idx}
-                                                type="button"
-                                                onClick={() => setCategoryFormData({ ...categoryFormData, colorIndex: idx })}
-                                                className="flex items-center gap-2 px-3 py-2 rounded-lg transition-all"
-                                                style={{
-                                                    background: categoryFormData.colorIndex === idx ? preset.bg : "transparent",
-                                                    border: categoryFormData.colorIndex === idx
-                                                        ? `2px solid ${preset.color}`
-                                                        : "2px solid var(--border-color)",
-                                                }}
-                                            >
-                                                <div
-                                                    className="w-4 h-4 rounded-full flex-shrink-0"
-                                                    style={{ background: preset.color }}
-                                                ></div>
-                                                <span className="text-[12px] font-medium" style={{ color: categoryFormData.colorIndex === idx ? preset.color : "var(--text-secondary)" }}>
-                                                    {preset.label}
-                                                </span>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                                {/* Preview */}
-                                {categoryFormData.name.trim() && (
-                                    <div>
-                                        <label className="text-[13px] font-medium text-[var(--text-secondary)] mb-1.5 block">Preview</label>
-                                        <span
-                                            className="type-badge"
-                                            style={{
-                                                background: COLOR_PRESETS[categoryFormData.colorIndex].bg,
-                                                color: COLOR_PRESETS[categoryFormData.colorIndex].color,
-                                                border: `1px solid ${COLOR_PRESETS[categoryFormData.colorIndex].border}`,
-                                            }}
-                                        >
-                                            {categoryFormData.name.trim().toLowerCase().replace(/\s+/g, "-")}
-                                        </span>
-                                    </div>
-                                )}
                                 <div className="flex gap-3 pt-2">
                                     <button
                                         onClick={handleSaveCategory}

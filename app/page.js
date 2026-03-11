@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "@/contexts/AuthContext";
-import Navbar from "@/components/Navbar";
+import UserMenu from "@/components/UserMenu";
 import ItemCard from "@/components/ItemCard";
 import { useEffect, useState } from "react";
 import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
@@ -53,14 +53,18 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen">
-      <Navbar />
       <main className="max-w-6xl mx-auto px-4 sm:px-8 py-6 sm:py-10">
         {/* Large Title — iOS style */}
-        <div className="mb-6 sm:mb-10">
-          <h1 className="home-title">Requisitions</h1>
-          <p className="home-subtitle">
-            {inOffice} in office{" \u00B7 "}{checkedOut} checked out
-          </p>
+        <div className="flex justify-between items-start mb-6 sm:mb-10">
+          <div>
+            <h1 className="home-title">Requisitions</h1>
+            <p className="home-subtitle">
+              {inOffice} in office{" \u00B7 "}{checkedOut} checked out
+            </p>
+          </div>
+          <div className="mt-1">
+            <UserMenu />
+          </div>
         </div>
 
         {/* My Items Banner */}

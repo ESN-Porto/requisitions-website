@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "@/contexts/AuthContext";
-import Navbar from "@/components/Navbar";
+import UserMenu from "@/components/UserMenu";
 import Link from "next/link";
 import { QRCodeCanvas } from "qrcode.react";
 import { useEffect, useState, useRef, useCallback } from "react";
@@ -77,24 +77,58 @@ export default function AdminPage() {
 
     if (loading) {
         return (
-            <div className="min-h-screen">
-                <Navbar />
+        <div className="min-h-screen">
+            <main className="max-w-3xl mx-auto px-4 sm:px-8 py-6 sm:py-10">
+                <div className="flex justify-between items-start mb-6 sm:mb-10">
+                    <div className="flex items-start gap-1 sm:gap-2">
+                        <button onClick={() => router.push("/")} className="p-2 -ml-2 mt-1 rounded-full hover:bg-[var(--bg-secondary)] transition-colors text-[var(--esn-cyan)]" aria-label="Go back">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="15 18 9 12 15 6" />
+                            </svg>
+                        </button>
+                        <div>
+                            <h1 className="home-title">Admin</h1>
+                            <p className="home-subtitle">Manage requisitions, categories and users</p>
+                        </div>
+                    </div>
+                    <div className="mt-1">
+                        <UserMenu />
+                    </div>
+                </div>
                 <div className="flex justify-center py-32"><div className="spinner"></div></div>
-            </div>
+            </main>
+        </div>
         );
     }
 
     if (!user || !isAdmin) {
         return (
-            <div className="min-h-screen">
-                <Navbar />
+        <div className="min-h-screen">
+            <main className="max-w-3xl mx-auto px-4 sm:px-8 py-6 sm:py-10">
+                <div className="flex justify-between items-start mb-6 sm:mb-10">
+                    <div className="flex items-start gap-1 sm:gap-2">
+                        <button onClick={() => router.push("/")} className="p-2 -ml-2 mt-1 rounded-full hover:bg-[var(--bg-secondary)] transition-colors text-[var(--esn-cyan)]" aria-label="Go back">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="15 18 9 12 15 6" />
+                            </svg>
+                        </button>
+                        <div>
+                            <h1 className="home-title">Admin</h1>
+                            <p className="home-subtitle">Manage requisitions, categories and users</p>
+                        </div>
+                    </div>
+                    <div className="mt-1">
+                        <UserMenu />
+                    </div>
+                </div>
                 <div className="max-w-4xl mx-auto px-5 py-20 text-center">
                     <p className="text-5xl mb-4 opacity-40">{"\u{1F512}"}</p>
                     <h2 className="text-lg font-semibold mb-1">Access Denied</h2>
                     <p className="text-[15px] text-[var(--text-muted)]">Admin privileges required.</p>
                     <button onClick={() => router.push("/")} className="btn-primary mt-6">Go to Dashboard</button>
                 </div>
-            </div>
+            </main>
+        </div>
         );
     }
 
@@ -384,12 +418,23 @@ export default function AdminPage() {
 
     return (
         <div className="min-h-screen">
-            <Navbar />
             <main className="max-w-3xl mx-auto px-4 sm:px-8 py-6 sm:py-10">
                 {/* Header — matches home page style */}
-                <div className="mb-6 sm:mb-10">
-                    <h1 className="home-title">Admin</h1>
-                    <p className="home-subtitle">Manage requisitions, categories and users</p>
+                <div className="flex justify-between items-start mb-6 sm:mb-10">
+                    <div className="flex items-start gap-1 sm:gap-2">
+                        <button onClick={() => router.push("/")} className="p-2 -ml-2 mt-1 rounded-full hover:bg-[var(--bg-secondary)] transition-colors text-[var(--esn-cyan)]" aria-label="Go back">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="15 18 9 12 15 6" />
+                            </svg>
+                        </button>
+                        <div>
+                            <h1 className="home-title">Admin</h1>
+                            <p className="home-subtitle">Manage requisitions, categories and users</p>
+                        </div>
+                    </div>
+                    <div className="mt-1">
+                        <UserMenu />
+                    </div>
                 </div>
 
                 {/* Tabs */}

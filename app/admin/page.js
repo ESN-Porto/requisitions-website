@@ -576,7 +576,6 @@ export default function AdminPage() {
                                         value={formData.name}
                                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                         className="input-field"
-                                        autoFocus
                                     />
                                 </div>
                                 <div>
@@ -645,7 +644,6 @@ export default function AdminPage() {
                                         value={categoryFormData.name}
                                         onChange={(e) => setCategoryFormData({ ...categoryFormData, name: e.target.value })}
                                         className="input-field"
-                                        autoFocus
                                     />
                                     {categoryFormData.name.trim() && (
                                         <p className="text-[12px] text-[var(--text-muted)] mt-1.5">

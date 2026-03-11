@@ -476,7 +476,6 @@ export default function ItemDetailPage() {
                                             value={eventName}
                                             onChange={(e) => setEventName(e.target.value)}
                                             className="input-grouped"
-                                            autoFocus
                                         />
                                     </div>
                                     <div className="mx-4 border-t border-[var(--border-subtle)]"></div>

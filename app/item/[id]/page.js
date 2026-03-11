@@ -35,6 +35,7 @@ export default function ItemDetailPage() {
     const [note, setNote] = useState("");
     const [adminOverrideLoading, setAdminOverrideLoading] = useState(false);
     const [showAdminTransferModal, setShowAdminTransferModal] = useState(false);
+    const [pendingAction, setPendingAction] = useState(null); // null | "pickup" | "return" | "pass"
     const [visibleCount, setVisibleCount] = useState(10);
 
     useEffect(() => {
@@ -102,7 +103,7 @@ export default function ItemDetailPage() {
                 note: note.trim() || null,
                 timestamp: serverTimestamp(),
             });
-            setEventName(""); setNote("");
+            setEventName(""); setNote(""); setPendingAction(null);
         } catch (e) { console.error("Pickup error:", e); }
         setActionLoading(false);
     };
@@ -126,7 +127,7 @@ export default function ItemDetailPage() {
                 note: note.trim() || null,
                 timestamp: serverTimestamp(),
             });
-            setEventName(""); setNote("");
+            setEventName(""); setNote(""); setPendingAction(null);
         } catch (e) { console.error("Return error:", e); }
         setActionLoading(false);
     };
@@ -150,7 +151,7 @@ export default function ItemDetailPage() {
                 note: note.trim() || null,
                 timestamp: serverTimestamp(),
             });
-            setEventName(""); setNote("");
+            setEventName(""); setNote(""); setPendingAction(null);
             setShowTransferModal(false);
         } catch (e) { console.error("Transfer error:", e); }
         setActionLoading(false);
@@ -273,33 +274,24 @@ export default function ItemDetailPage() {
                     Back
                 </button>
 
-                {/* Item Header — compact */}
-                <div className="card p-4 sm:p-5">
-                    <div className="flex items-center gap-4">
-                        {item.photoURL ? (
-                            <img src={item.photoURL} alt={item.name} className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl object-cover ring-1 ring-black/5 flex-shrink-0" />
-                        ) : (
-                            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-[var(--bg-secondary)] flex items-center justify-center text-2xl sm:text-3xl flex-shrink-0">
-                                {"\u{1F4E6}"}
-                            </div>
-                        )}
-                        <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-3">
-                                <h1 className="text-lg sm:text-xl font-bold tracking-tight truncate">{item.name}</h1>
-                                <div className={`status-badge flex-shrink-0 ${isInOffice ? "status-office" : "status-out"}`}>
-                                    <span className={`status-dot ${isInOffice ? "office" : "out"}`}></span>
-                                    {isInOffice ? "Office" : "Out"}
-                                </div>
-                            </div>
-                            <span className="type-badge mt-1.5" style={badgeStyle}>
-                                {item.type}
-                            </span>
+                {/* Hero Image */}
+                <div className="item-hero">
+                    {item.photoURL ? (
+                        <img src={item.photoURL} alt={item.name} />
+                    ) : (
+                        <div className="item-hero-placeholder">
+                            {"\u{1F4E6}"}
                         </div>
-                    </div>
+                    )}
                 </div>
 
-                {/* Status + Actions */}
-                <div className="card mt-3 sm:mt-4 overflow-hidden">
+                {/* Title — centered below hero */}
+                <div className="text-center mb-5 sm:mb-6">
+                    <h1 className="text-[22px] sm:text-[26px] font-bold tracking-tight leading-tight">{item.name}</h1>
+                </div>
+
+                {/* Status card */}
+                <div className="card overflow-hidden">
                     {/* Status row */}
                     <div className="flex items-center gap-3.5 p-4 sm:px-6 sm:py-5">
                         {isInOffice ? (
@@ -332,93 +324,21 @@ export default function ItemDetailPage() {
                         )}
                     </div>
 
-                    {/* Actions */}
-                    {isInOffice ? (
-                        !user ? (
-                            <div className="px-4 sm:px-6 pb-5 text-[14px] text-[var(--text-muted)]">
-                                <button onClick={signInWithGoogle} className="font-medium text-[var(--text-primary)] underline">Sign in</button> to pick up this item.
-                            </div>
-                        ) : (
-                            <div className="border-t border-[var(--border-subtle)] p-4 sm:px-6 sm:py-5">
-                                <div className="mb-3">
-                                    <label className="text-[13px] font-medium text-[var(--text-secondary)] mb-1.5 block">Event name</label>
-                                    <input
-                                        type="text"
-                                        placeholder="e.g. Erasmus Welcome Week"
-                                        value={eventName}
-                                        onChange={(e) => setEventName(e.target.value)}
-                                        className="input-field !text-[14px]"
-                                    />
-                                </div>
-                                <div className="mb-3.5">
-                                    <label className="text-[13px] font-medium text-[var(--text-secondary)] mb-1.5 block">Note <span className="text-[var(--text-muted)] font-normal">(optional)</span></label>
-                                    <input
-                                        type="text"
-                                        placeholder="e.g. Taking it to building B"
-                                        value={note}
-                                        onChange={(e) => setNote(e.target.value)}
-                                        className="input-field !text-[14px]"
-                                    />
-                                </div>
-                                <button
-                                    onClick={handlePickup}
-                                    disabled={actionLoading || !eventName.trim()}
-                                    className="btn-action-primary disabled:opacity-40 disabled:cursor-not-allowed"
-                                >
-                                    Pick up from office
-                                    {actionLoading && <span className="ml-auto spinner !w-4 !h-4 !border-2"></span>}
-                                </button>
-                            </div>
-                        )
-                    ) : isCurrentHolder ? (
-                        <div className="border-t border-[var(--border-subtle)] p-4 sm:px-6 sm:py-5">
-                            <div className="mb-3">
-                                <label className="text-[13px] font-medium text-[var(--text-secondary)] mb-1.5 block">Event name <span className="text-[var(--text-muted)] font-normal">(optional)</span></label>
-                                <input
-                                    type="text"
-                                    placeholder="e.g. Erasmus Welcome Week"
-                                    value={eventName}
-                                    onChange={(e) => setEventName(e.target.value)}
-                                    className="input-field !text-[14px]"
-                                />
-                            </div>
-                            <div className="mb-3.5">
-                                <label className="text-[13px] font-medium text-[var(--text-secondary)] mb-1.5 block">Note <span className="text-[var(--text-muted)] font-normal">(optional)</span></label>
-                                <input
-                                    type="text"
-                                    placeholder="e.g. Left it on the shelf in room 2.1"
-                                    value={note}
-                                    onChange={(e) => setNote(e.target.value)}
-                                    className="input-field !text-[14px]"
-                                />
-                            </div>
-                            <div className="flex gap-2.5">
-                                <button
-                                    onClick={handleReturn}
-                                    disabled={actionLoading}
-                                    className="btn-action-primary flex-1 disabled:opacity-40 disabled:cursor-not-allowed"
-                                >
-                                    Return to office
-                                    {actionLoading && <span className="ml-auto spinner !w-4 !h-4 !border-2"></span>}
-                                </button>
-                                <button
-                                    onClick={() => setShowTransferModal(true)}
-                                    disabled={actionLoading}
-                                    className="btn-action-secondary flex-1 disabled:opacity-40 disabled:cursor-not-allowed"
-                                >
-                                    Pass to someone
-                                </button>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="border-t border-[var(--border-subtle)] px-4 sm:px-6 py-4">
-                            <p className="text-[13px] text-[var(--text-muted)]">
-                                Only <span className="font-medium text-[var(--text-secondary)]">{item.currentHolderName}</span> can return or transfer this item.
-                            </p>
+                    {/* Not logged in message */}
+                    {isInOffice && !user && (
+                        <div className="px-4 sm:px-6 pb-5 text-[14px] text-[var(--text-muted)]">
+                            <button onClick={signInWithGoogle} className="font-medium text-[var(--text-primary)] underline">Sign in</button> to pick up this item.
                         </div>
                     )}
 
-                    {/* Admin actions — inside the same card */}
+                    {/* Non-holder message */}
+                    {!isInOffice && !isCurrentHolder && (
+                        <div className="px-4 sm:px-6 pb-4 text-[13px] text-[var(--text-muted)]">
+                            Only <span className="font-medium text-[var(--text-secondary)]">{item.currentHolderName}</span> can return or transfer this item.
+                        </div>
+                    )}
+
+                    {/* Admin actions */}
                     {isAdmin && user && (
                         <div className="border-t border-[var(--border-subtle)] px-4 sm:px-6 py-3.5 flex items-center gap-2.5">
                             <span className="text-[12px] font-medium text-[var(--text-muted)] uppercase tracking-wider mr-auto">Admin</span>
@@ -426,7 +346,7 @@ export default function ItemDetailPage() {
                                 <button
                                     onClick={handleAdminReturn}
                                     disabled={adminOverrideLoading}
-                                    className="btn-action-inline disabled:opacity-40 disabled:cursor-not-allowed"
+                                    className="btn-action-inline"
                                 >
                                     Force return
                                     {adminOverrideLoading && <span className="spinner !w-3.5 !h-3.5 !border-2"></span>}
@@ -435,7 +355,7 @@ export default function ItemDetailPage() {
                             <button
                                 onClick={() => setShowAdminTransferModal(true)}
                                 disabled={adminOverrideLoading}
-                                className="btn-action-inline disabled:opacity-40 disabled:cursor-not-allowed"
+                                className="btn-action-inline"
                             >
                                 {isInOffice ? "Assign to someone" : "Reassign"}
                             </button>
@@ -444,8 +364,8 @@ export default function ItemDetailPage() {
                 </div>
 
                 {/* Transfer History */}
-                <div className="mt-6 sm:mt-8">
-                    <h2 className="font-semibold text-base sm:text-lg mb-4">History</h2>
+                <div className="mt-6 sm:mt-8 pb-28">
+                    <h2 className="font-semibold text-base sm:text-lg mb-4 px-1">History</h2>
 
                     {transfersLoading ? (
                         <div className="flex justify-center py-12"><div className="spinner"></div></div>
@@ -540,6 +460,91 @@ export default function ItemDetailPage() {
                     )}
                 </div>
             </main>
+
+            {/* Floating action bar */}
+            {((isInOffice && user) || isCurrentHolder) && (
+                <div className="floating-bar">
+                    <div className="floating-bar-inner max-w-2xl mx-auto">
+                        {pendingAction ? (
+                            <>
+                                {/* Grouped inputs */}
+                                <div className="bg-[var(--bg-secondary)] rounded-[12px] mb-3">
+                                    <div className="px-4">
+                                        <label className="text-[13px] font-medium text-[var(--text-secondary)] pt-2.5 block">
+                                            Event name{" "}
+                                            {pendingAction !== "pickup" && <span className="text-[var(--text-muted)] font-normal">(optional)</span>}
+                                        </label>
+                                        <input
+                                            type="text"
+                                            placeholder="e.g. Erasmus Welcome Week"
+                                            value={eventName}
+                                            onChange={(e) => setEventName(e.target.value)}
+                                            className="input-grouped"
+                                            autoFocus
+                                        />
+                                    </div>
+                                    <div className="mx-4 border-t border-[var(--border-subtle)]"></div>
+                                    <div className="px-4">
+                                        <label className="text-[13px] font-medium text-[var(--text-secondary)] pt-2.5 block">Note <span className="text-[var(--text-muted)] font-normal">(optional)</span></label>
+                                        <input
+                                            type="text"
+                                            placeholder={pendingAction === "pickup" ? "e.g. Taking it to building B" : "e.g. Left it on the shelf in room 2.1"}
+                                            value={note}
+                                            onChange={(e) => setNote(e.target.value)}
+                                            className="input-grouped"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="flex gap-2.5">
+                                    <button
+                                        onClick={
+                                            pendingAction === "pickup" ? handlePickup :
+                                            pendingAction === "return" ? handleReturn :
+                                            () => setShowTransferModal(true)
+                                        }
+                                        disabled={actionLoading || (pendingAction === "pickup" && !eventName.trim())}
+                                        className="btn-action-primary flex-1"
+                                    >
+                                        {pendingAction === "pickup" ? "Confirm pickup" :
+                                         pendingAction === "return" ? "Confirm return" :
+                                         "Choose person"}
+                                        {actionLoading && <span className="ml-2 spinner !w-4 !h-4 !border-2"></span>}
+                                    </button>
+                                    <button
+                                        onClick={() => { setPendingAction(null); setEventName(""); setNote(""); }}
+                                        className="btn-action-secondary flex-[0.6]"
+                                        disabled={actionLoading}
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </>
+                        ) : isInOffice ? (
+                            <button
+                                onClick={() => setPendingAction("pickup")}
+                                className="btn-action-primary"
+                            >
+                                Pick up from office
+                            </button>
+                        ) : (
+                            <div className="flex gap-2.5">
+                                <button
+                                    onClick={() => setPendingAction("return")}
+                                    className="btn-action-primary flex-1"
+                                >
+                                    Return to office
+                                </button>
+                                <button
+                                    onClick={() => setPendingAction("pass")}
+                                    className="btn-action-secondary flex-1"
+                                >
+                                    Pass to someone
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {showTransferModal && (
                 <TransferModal

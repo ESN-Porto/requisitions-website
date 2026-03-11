@@ -50,7 +50,6 @@ export default function TransferModal({ onClose, onTransfer, currentUserId }) {
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className="input-field mb-4"
-                    autoFocus
                 />
 
                 <div className="max-h-64 overflow-y-auto -mx-2 px-2">

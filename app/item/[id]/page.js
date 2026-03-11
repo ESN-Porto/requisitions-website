@@ -1,7 +1,6 @@
 "use client";
 
 import { useAuth } from "@/contexts/AuthContext";
-import Navbar from "@/components/Navbar";
 import TransferModal from "@/components/TransferModal";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -209,7 +208,6 @@ export default function ItemDetailPage() {
     if (loading || itemLoading) {
         return (
             <div className="min-h-screen">
-                <Navbar />
                 <div className="flex justify-center py-32"><div className="spinner"></div></div>
             </div>
         );
@@ -218,7 +216,6 @@ export default function ItemDetailPage() {
     if (!item) {
         return (
             <div className="min-h-screen">
-                <Navbar />
                 <div className="max-w-2xl mx-auto px-4 py-20 text-center">
                     <p className="text-5xl mb-4 opacity-40">{"\u{1F50D}"}</p>
                     <h2 className="text-xl font-bold mb-2">Item not found</h2>
@@ -261,7 +258,6 @@ export default function ItemDetailPage() {
 
     return (
         <div className="min-h-screen">
-            <Navbar />
             <main className="max-w-2xl mx-auto px-4 sm:px-8 py-5 sm:py-8">
                 {/* Back */}
                 <button

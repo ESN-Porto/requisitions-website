@@ -461,26 +461,25 @@ export default function AdminPage() {
                                     </div>
                                 )}
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-[14px] font-medium truncate">{u.name}</p>
-                                    <p className="text-xs text-[var(--text-muted)] truncate">{u.email}</p>
+                                    <div className="flex items-baseline gap-1.5">
+                                        <p className="text-[14px] font-medium truncate">{u.name}</p>
+                                        <span className={`text-[10px] font-semibold px-1.5 py-px rounded flex-shrink-0 leading-none ${u.role === "admin"
+                                            ? "bg-[var(--text-primary)] text-white"
+                                            : "bg-[var(--bg-secondary)] text-[var(--text-muted)]"
+                                            }`}>
+                                            {u.role}
+                                        </span>
+                                    </div>
+                                    <p className="text-xs text-[var(--text-muted)] truncate mt-0.5">{u.email}</p>
                                 </div>
-                                <div className="flex items-center gap-2.5 flex-shrink-0">
-                                    <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-md ${u.role === "admin"
-                                        ? "bg-[var(--text-primary)] text-white"
-                                        : "bg-[var(--bg-secondary)] text-[var(--text-muted)]"
-                                        }`}>
-                                        {u.role}
-                                    </span>
-                                    {u.id !== user.uid && (
-                                        <button
-                                            onClick={() => toggleRole(u.id, u.role)}
-                                            disabled={u.role !== "admin" && !u.email?.toLowerCase().endsWith("@esnporto.org")}
-                                            className="btn-secondary !py-2 !px-3.5 !text-[13px] disabled:opacity-40 disabled:cursor-not-allowed"
-                                        >
-                                            {u.role === "admin" ? "Demote" : "Promote"}
-                                        </button>
-                                    )}
-                                </div>
+                                {u.id !== user.uid && (u.role === "admin" || u.email?.toLowerCase().endsWith("@esnporto.org")) && (
+                                    <button
+                                        onClick={() => toggleRole(u.id, u.role)}
+                                        className="btn-secondary !py-2 !px-3.5 !text-[13px] flex-shrink-0"
+                                    >
+                                        {u.role === "admin" ? "Demote" : "Promote"}
+                                    </button>
+                                )}
                             </div>
                         ))}
                     </div>

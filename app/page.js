@@ -48,17 +48,18 @@ export default function HomePage() {
     ...categories.map((cat) => ({ key: cat.key, label: cat.name })),
   ];
 
+  const inOffice = items.filter((i) => i.status === "office").length;
+  const checkedOut = items.filter((i) => i.status === "out").length;
+
   return (
     <div className="min-h-screen">
       <Navbar />
-      <main className="max-w-6xl mx-auto px-4 sm:px-8 py-5 sm:py-8">
-        {/* Header */}
-        <div className="mb-5 sm:mb-8">
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Requisitions</h1>
-          <p className="text-[15px] text-[var(--text-muted)] mt-1">
-            {items.filter((i) => i.status === "office").length} in office
-            {" \u00B7 "}
-            {items.filter((i) => i.status === "out").length} checked out
+      <main className="max-w-6xl mx-auto px-4 sm:px-8 py-6 sm:py-10">
+        {/* Large Title — iOS style */}
+        <div className="mb-6 sm:mb-10">
+          <h1 className="home-title">Requisitions</h1>
+          <p className="home-subtitle">
+            {inOffice} in office{" \u00B7 "}{checkedOut} checked out
           </p>
         </div>
 
@@ -75,8 +76,8 @@ export default function HomePage() {
           </p>
         )}
 
-        {/* Filters */}
-        <div className="flex gap-2 mb-5 sm:mb-6 overflow-x-auto pb-1 -mx-4 px-4 sm:mx-0 sm:px-0">
+        {/* iOS-style Filter Pills */}
+        <div className="filter-bar">
           {filterOptions.map(({ key, label }) => (
             <button
               key={key}
@@ -111,7 +112,7 @@ export default function HomePage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
             {filteredItems.map((item) => (
-              <ItemCard key={item.id} item={item} categories={categories} />
+              <ItemCard key={item.id} item={item} />
             ))}
           </div>
         )}

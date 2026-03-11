@@ -127,12 +127,34 @@
     font-weight: 600;
   }
 
+  /* ---------- Home Page Header ---------- */
+  .home-title {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--text-primary);
+    line-height: 1.15;
+  }
+
+  @media (min-width: 640px) {
+    .home-title {
+      font-size: 34px;
+    }
+  }
+
+  .home-subtitle {
+    font-size: 15px;
+    color: var(--text-muted);
+    margin-top: 4px;
+    font-weight: 400;
+  }
+
   /* ---------- Cards ---------- */
   .card {
     background: var(--bg-card);
     border: none;
     border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-xs);
+    box-shadow: var(--shadow-sm);
     transition: box-shadow 0.3s var(--ease-out),
       transform 0.3s var(--ease-out);
   }
@@ -144,7 +166,67 @@
   .card-interactive:hover {
     box-shadow: var(--shadow-md);
     transform: translateY(-2px);
-    border-color: rgba(0, 0, 0, 0.08);
+  }
+
+  /* Card content area */
+  .card-content {
+    padding: 12px 14px 14px;
+  }
+
+  @media (min-width: 640px) {
+    .card-content {
+      padding: 14px 16px 16px;
+    }
+  }
+
+  .card-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  @media (min-width: 640px) {
+    .card-title {
+      font-size: 15px;
+    }
+  }
+
+  .card-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+  }
+
+  .card-status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .card-status-dot.office {
+    background: var(--status-office);
+  }
+
+  .card-status-dot.out {
+    background: var(--status-out);
+    animation: pulse-out 2.5s ease-in-out infinite;
+  }
+
+  .card-status-text {
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .glass-card {
@@ -162,21 +244,34 @@
   }
 
   /* ---------- Item Images ---------- */
+  .item-image-wrapper {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    background: var(--bg-secondary);
+  }
+
   .item-image {
     width: 100%;
-    height: 200px;
+    height: 100%;
     object-fit: cover;
+    transition: transform 0.4s var(--ease-out);
+  }
+
+  .card-interactive:hover .item-image {
+    transform: scale(1.03);
   }
 
   .item-image-placeholder {
     width: 100%;
-    height: 200px;
+    aspect-ratio: 4 / 3;
     display: flex;
     align-items: center;
     justify-content: center;
     background: var(--bg-secondary);
-    font-size: 3rem;
+    font-size: 2.5rem;
     user-select: none;
+    color: var(--text-muted);
   }
 
   /* ---------- Buttons ---------- */
@@ -429,16 +524,38 @@
 
   /* Type-specific badge colors are applied inline from Firestore category data */
 
-  /* ---------- Filter Pills ---------- */
+  /* ---------- Filter Bar ---------- */
+  .filter-bar {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 20px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    -mx-4: 0;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .filter-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  @media (min-width: 640px) {
+    .filter-bar {
+      margin-bottom: 24px;
+    }
+  }
+
+  /* ---------- Filter Pills — iOS Maps/Photos style ---------- */
   .filter-pill {
-    padding: 6px 14px;
+    padding: 7px 16px;
     border-radius: var(--radius-full);
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
-    transition: all 0.2s var(--ease-out);
-    border: 1px solid transparent;
-    background: transparent;
+    transition: all 0.25s var(--ease-out);
+    border: none;
+    background: #e8e8ed;
     color: var(--text-secondary);
     white-space: nowrap;
     flex-shrink: 0;
@@ -446,28 +563,31 @@
 
   @media (min-width: 640px) {
     .filter-pill {
-      padding: 7px 16px;
+      padding: 8px 18px;
+      font-size: 14px;
     }
   }
 
   .filter-pill:hover {
-    background: var(--bg-card);
+    background: #dddde2;
     color: var(--text-primary);
   }
 
   .filter-pill.active {
-    background: var(--text-primary);
-    color: #ffffff;
-    border-color: var(--text-primary);
+    background: #ffffff;
+    color: var(--text-primary);
+    font-weight: 600;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08), 0 0.5px 1.5px rgba(0, 0, 0, 0.06);
   }
 
   .filter-pill .count {
-    margin-left: 4px;
-    opacity: 0.5;
+    margin-left: 5px;
+    opacity: 0.45;
+    font-weight: 400;
   }
 
   .filter-pill.active .count {
-    opacity: 0.7;
+    opacity: 0.55;
   }
 
   /* ---------- Form Inputs ---------- */

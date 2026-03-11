@@ -800,6 +800,441 @@
       transform: translateY(0);
     }
   }
+
+  /* ========================================================
+     QuickScan — iOS HIG-inspired mobile action page
+     ======================================================== */
+
+  .scan-page {
+    position: relative;
+    height: 100vh;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--bg-primary);
+  }
+
+  /* Close — frosted glass, iOS vibrancy */
+  .scan-close {
+    position: absolute;
+    top: max(16px, env(safe-area-inset-top, 16px));
+    left: 16px;
+    z-index: 10;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.15);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border: none;
+    color: rgba(255, 255, 255, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s var(--ease-out);
+  }
+
+  .scan-close:active {
+    transform: scale(0.88);
+    background: rgba(0, 0, 0, 0.25);
+  }
+
+  /* Hero — top visual anchor */
+  .scan-hero {
+    position: relative;
+    flex: 0 0 52%;
+    overflow: hidden;
+    background: #1c1c1e;
+  }
+
+  .scan-hero::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 80px;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.25) 0%, transparent 100%);
+    z-index: 4;
+    pointer-events: none;
+  }
+
+  .scan-hero-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    animation: heroReveal 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .scan-hero-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #1c1c1e;
+  }
+
+  .scan-hero-blurred {
+    filter: blur(28px) brightness(0.35) saturate(1.2);
+    transform: scale(1.15);
+  }
+
+  /* Avatar overlay — bottom-right (State B) */
+  .scan-avatar-overlay {
+    position: absolute;
+    bottom: 36px;
+    right: 20px;
+    z-index: 5;
+    animation: avatarPop 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+  }
+
+  .scan-avatar-img {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid rgba(255, 255, 255, 0.95);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  }
+
+  .scan-avatar-fallback {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: #636366;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: 600;
+    border: 3px solid rgba(255, 255, 255, 0.95);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Holder avatar — centered (State C) */
+  .scan-holder-center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3;
+  }
+
+  .scan-holder-img {
+    width: 128px;
+    height: 128px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid rgba(255, 255, 255, 0.9);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    animation: scaleIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
+  }
+
+  .scan-holder-fallback {
+    width: 128px;
+    height: 128px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    color: rgba(255, 255, 255, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+    font-weight: 600;
+    border: 3px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    animation: scaleIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
+  }
+
+  /* Panel — slides up over bottom half */
+  .scan-panel {
+    flex: 1;
+    position: relative;
+    z-index: 5;
+    margin-top: -20px;
+    border-radius: 20px 20px 0 0;
+    background: var(--bg-primary);
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.06);
+    animation: panelSlideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both;
+  }
+
+  .scan-panel-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 24px 0;
+    padding-bottom: max(28px, env(safe-area-inset-bottom, 28px));
+    height: 100%;
+  }
+
+  /* Info block */
+  .scan-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    text-align: center;
+  }
+
+  /* Status — simple dot + label, no box */
+  .scan-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .scan-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .scan-status-dot.office {
+    background: #34c759;
+  }
+
+  .scan-status-dot.out {
+    background: #ff9f0a;
+    animation: pulse-out 2.5s ease-in-out infinite;
+  }
+
+  .scan-status-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #8e8e93;
+    letter-spacing: 0;
+  }
+
+  /* Item name */
+  .scan-item-name {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: var(--text-primary);
+    line-height: 1.2;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-top: 2px;
+  }
+
+  @media (min-width: 400px) {
+    .scan-item-name {
+      font-size: 26px;
+    }
+  }
+
+  /* Category — inline subtitle, no box */
+  .scan-subtitle {
+    font-size: 15px;
+    font-weight: 400;
+    color: #8e8e93;
+    letter-spacing: 0;
+    margin-top: 1px;
+  }
+
+  /* Context line */
+  .scan-context {
+    font-size: 16px;
+    font-weight: 400;
+    color: #8e8e93;
+    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .scan-context strong {
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  /* Actions — pushed to bottom */
+  .scan-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    max-width: 340px;
+    margin-top: auto;
+  }
+
+  /* Buttons — iOS squircle, 50pt touch targets */
+  .scan-btn-primary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    height: 50px;
+    padding: 0 24px;
+    border: none;
+    border-radius: 14px;
+    font-size: 17px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s var(--ease-out);
+    background: var(--text-primary);
+    color: #ffffff;
+    font-family: inherit;
+    letter-spacing: -0.01em;
+  }
+
+  .scan-btn-primary:active {
+    transform: scale(0.97);
+    opacity: 0.85;
+  }
+
+  .scan-btn-primary:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    transform: none !important;
+  }
+
+  /* Secondary — solid gray fill, no border (iOS System Gray 6) */
+  .scan-btn-secondary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    height: 50px;
+    padding: 0 24px;
+    border: none;
+    border-radius: 14px;
+    font-size: 17px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s var(--ease-out);
+    background: #f2f2f7;
+    color: var(--text-primary);
+    font-family: inherit;
+    letter-spacing: -0.01em;
+  }
+
+  .scan-btn-secondary:active {
+    transform: scale(0.97);
+    background: #e5e5ea;
+  }
+
+  .scan-btn-secondary:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    transform: none !important;
+  }
+
+  /* Google sign-in — matches secondary style */
+  .scan-btn-google {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    height: 50px;
+    padding: 0 24px;
+    border: none;
+    border-radius: 14px;
+    font-size: 17px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s var(--ease-out);
+    background: #f2f2f7;
+    color: var(--text-primary);
+    font-family: inherit;
+  }
+
+  .scan-btn-google:active {
+    transform: scale(0.97);
+    background: #e5e5ea;
+  }
+
+  /* Confirmation bottom sheet */
+  .scan-confirm-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    animation: fadeIn 0.15s var(--ease-out);
+  }
+
+  .scan-confirm-sheet {
+    width: 100%;
+    max-width: 440px;
+    background: var(--bg-primary);
+    border-radius: 20px 20px 0 0;
+    padding: 28px 24px 0;
+    padding-bottom: max(32px, env(safe-area-inset-bottom, 32px));
+    animation: sheetSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .scan-confirm-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    width: 100%;
+  }
+
+  .scan-confirm-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: #f2f2f7;
+    color: #8e8e93;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 14px;
+  }
+
+  .scan-confirm-title {
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-bottom: 6px;
+  }
+
+  .scan-confirm-desc {
+    font-size: 15px;
+    color: #8e8e93;
+    line-height: 1.5;
+    max-width: 300px;
+    margin-bottom: 24px;
+  }
+
+  .scan-confirm-desc strong {
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .scan-confirm-actions {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+    max-width: 340px;
+  }
+
+  .scan-confirm-actions .scan-btn-primary,
+  .scan-confirm-actions .scan-btn-secondary {
+    flex: 1;
+  }
 }
 
 /* =========================================================
@@ -842,6 +1277,59 @@
 
   50% {
     opacity: 0.5;
+  }
+}
+
+@keyframes heroReveal {
+  from {
+    transform: scale(1.06);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.75);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes avatarPop {
+  from {
+    opacity: 0;
+    transform: scale(0.6) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes panelSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(32px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes sheetSlideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
   }
 }
 

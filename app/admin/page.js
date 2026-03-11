@@ -623,14 +623,14 @@ export default function AdminPage() {
                         <div className="p-4 rounded-2xl bg-white">
                             <QRCodeCanvas
                                 id="qr-canvas"
-                                value={`${typeof window !== "undefined" ? window.location.origin : ""}/item/${qrItem.id}`}
+                                value={`${typeof window !== "undefined" ? window.location.origin : ""}/scan/${qrItem.id}`}
                                 size={200}
                                 marginSize={1}
                             />
                         </div>
                         <div className="text-center">
                             <p className="font-semibold text-[15px]">{qrItem.name}</p>
-                            <p className="text-[12px] text-[var(--text-muted)] mt-0.5 font-mono">/item/{qrItem.id}</p>
+                            <p className="text-[12px] text-[var(--text-muted)] mt-0.5 font-mono">/scan/{qrItem.id}</p>
                         </div>
                         <button
                             onClick={() => {

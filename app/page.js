@@ -98,8 +98,17 @@ export default function HomePage() {
 
         {/* Items Grid */}
         {itemsLoading ? (
-          <div className="flex justify-center py-24">
-            <div className="spinner"></div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 animate-pulse mt-4">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="card p-3 sm:p-4">
+                <div className="w-full aspect-[4/3] bg-[var(--bg-secondary)] rounded-xl mb-3"></div>
+                <div className="h-4 w-2/3 bg-[var(--border-subtle)] rounded-md mb-2.5"></div>
+                <div className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[var(--border-subtle)]"></div>
+                  <div className="h-3 w-1/3 bg-[var(--bg-secondary)] rounded-md"></div>
+                </div>
+              </div>
+            ))}
           </div>
         ) : filteredItems.length === 0 ? (
           <div className="text-center py-24">

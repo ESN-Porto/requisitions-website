@@ -146,8 +146,9 @@ export default function ScanPage() {
     if (loading || itemLoading || (user && !userData)) {
         return (
             <div className="scan-page">
-                <div className="flex items-center justify-center" style={{ height: "100%" }}>
-                    <div className="spinner"></div>
+                <div className="w-full h-full flex flex-col justify-end pb-8 px-5 animate-pulse">
+                    <div className="w-full aspect-square bg-[rgba(255,255,255,0.08)] rounded-[32px] mb-8 mt-12"></div>
+                    <div className="h-48 w-full bg-[rgba(255,255,255,0.08)] rounded-[24px]"></div>
                 </div>
             </div>
         );

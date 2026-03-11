@@ -95,7 +95,30 @@ export default function AdminPage() {
                         <UserMenu />
                     </div>
                 </div>
-                <div className="flex justify-center py-32"><div className="spinner"></div></div>
+                <div className="animate-pulse w-full max-w-3xl mx-auto mt-4">
+                    <div className="flex gap-2.5 mb-6 overflow-hidden">
+                        <div className="h-[34px] sm:h-[36px] w-[110px] bg-[var(--border-subtle)] rounded-full"></div>
+                        <div className="h-[34px] sm:h-[36px] w-[120px] bg-[var(--border-subtle)] rounded-full"></div>
+                        <div className="h-[34px] sm:h-[36px] w-[90px] bg-[var(--border-subtle)] rounded-full"></div>
+                    </div>
+                    
+                    <div className="flex justify-end mb-4">
+                        <div className="h-[40px] w-[150px] bg-[var(--border-subtle)] rounded-xl"></div>
+                    </div>
+
+                    <div className="card admin-list bg-[var(--bg-card)]">
+                        {[1, 2, 3, 4].map((i) => (
+                            <div key={i} className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-4 ${i !== 4 ? "border-b border-[var(--border-subtle)]" : ""}`}>
+                                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[var(--bg-secondary)] flex-shrink-0"></div>
+                                <div className="flex-1">
+                                    <div className="h-4 w-1/3 sm:w-1/4 bg-[var(--bg-secondary)] rounded-md mb-2"></div>
+                                    <div className="h-3 w-1/2 sm:w-1/3 bg-[var(--bg-secondary)] rounded-md"></div>
+                                </div>
+                                <div className="w-8 h-8 rounded-full bg-[var(--bg-secondary)] flex-shrink-0"></div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
             </main>
         </div>
         );

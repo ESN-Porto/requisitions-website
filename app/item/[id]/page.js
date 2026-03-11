@@ -208,7 +208,13 @@ export default function ItemDetailPage() {
     if (loading || itemLoading) {
         return (
             <div className="min-h-screen">
-                <div className="flex justify-center py-32"><div className="spinner"></div></div>
+                <main className="max-w-2xl mx-auto px-4 sm:px-8 py-5 sm:py-8 animate-pulse mt-4">
+                    <div className="h-4 w-16 bg-[var(--border-subtle)] rounded mb-5 sm:mb-6"></div>
+                    <div className="w-full aspect-square max-h-[320px] sm:max-h-[380px] bg-[var(--bg-secondary)] rounded-[var(--radius-xl)] sm:rounded-[24px] mb-5"></div>
+                    <div className="flex justify-center mb-5 sm:mb-6">
+                        <div className="h-6 sm:h-8 w-1/2 bg-[var(--border-subtle)] rounded-md"></div>
+                    </div>
+                </main>
             </div>
         );
     }
@@ -364,7 +370,18 @@ export default function ItemDetailPage() {
                     <h2 className="font-semibold text-base sm:text-lg mb-4 px-1">History</h2>
 
                     {transfersLoading ? (
-                        <div className="flex justify-center py-12"><div className="spinner"></div></div>
+                        <div className="card overflow-hidden animate-pulse">
+                            {[1, 2, 3].map(i => (
+                                <div key={i} className="flex items-start gap-3 p-4 sm:p-5 border-b border-[var(--border-subtle)]">
+                                    <div className="w-8 h-8 rounded-full bg-[var(--bg-secondary)] flex-shrink-0"></div>
+                                    <div className="flex-1">
+                                        <div className="h-3.5 w-full bg-[var(--bg-secondary)] rounded-md mb-2"></div>
+                                        <div className="h-3.5 w-3/4 bg-[var(--bg-secondary)] rounded-md mb-2"></div>
+                                        <div className="h-2.5 w-1/4 bg-[var(--bg-secondary)] rounded-md mt-1"></div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
                     ) : transfers.length === 0 ? (
                         <div className="text-center py-12">
                             <p className="text-sm text-[var(--text-muted)]">No history yet</p>

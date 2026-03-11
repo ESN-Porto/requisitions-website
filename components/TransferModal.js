@@ -55,8 +55,16 @@ export default function TransferModal({ onClose, onTransfer, currentUserId }) {
 
                 <div className="max-h-64 overflow-y-auto -mx-2 px-2">
                     {loading ? (
-                        <div className="flex justify-center py-8">
-                            <div className="spinner"></div>
+                        <div className="space-y-1 animate-pulse">
+                            {[1, 2, 3].map((i) => (
+                                <div key={i} className="w-full flex items-center gap-3 p-3 rounded-xl">
+                                    <div className="w-9 h-9 rounded-full bg-[var(--bg-secondary)] flex-shrink-0"></div>
+                                    <div className="flex-1">
+                                        <div className="h-3.5 w-1/3 bg-[var(--bg-secondary)] rounded-md mb-2"></div>
+                                        <div className="h-3 w-1/2 bg-[var(--bg-secondary)] rounded-md"></div>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     ) : filteredUsers.length === 0 ? (
                         <p className="text-center text-sm text-[var(--text-muted)] py-8">No members found</p>

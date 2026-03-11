@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
 
 export default function LoginPage() {
-    const { signInWithGoogle } = useAuth();
+    const { signInWithGoogle, authError } = useAuth();
 
     return (
         <div className="login-container">
@@ -62,6 +62,17 @@ export default function LoginPage() {
                         Sign in with Google
                     </button>
 
+                    {authError && (
+                        <div className="login-error-msg">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <circle cx="12" cy="12" r="10" />
+                                <line x1="12" y1="8" x2="12" y2="12" />
+                                <line x1="12" y1="16" x2="12.01" y2="16" />
+                            </svg>
+                            <span>{authError}</span>
+                        </div>
+                    )}
+
                     <p className="login-card-terms">
                         By signing in, you agree to our Terms of Service and Privacy Policy.
                     </p>
@@ -70,3 +81,4 @@ export default function LoginPage() {
         </div>
     );
 }
+

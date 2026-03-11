@@ -72,6 +72,12 @@ service cloud.firestore {
       );
     }
 
+    // --- SETTINGS (email allowlist, etc.) ---
+    match /settings/{settingId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
     // --- TRANSFERS (AUDIT LOG) ---
     match /transfers/{transferId} {
       allow read: if true;

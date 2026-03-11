@@ -42,6 +42,9 @@ export default function AdminPage() {
     const [savingCategory, setSavingCategory] = useState(false);
     const [deleteCategoryConfirm, setDeleteCategoryConfirm] = useState(null);
 
+    // User form/action state
+    const [deleteUserConfirm, setDeleteUserConfirm] = useState(null);
+
     // Click-away listener for action menus
     const menuRef = useRef(null);
     const closeMenu = useCallback(() => setActionMenuOpen(null), []);
@@ -215,6 +218,16 @@ export default function AdminPage() {
         }
     };
 
+    const handleDeleteUser = async (userId) => {
+        try {
+            await deleteDoc(doc(getFirebaseDb(), "users", userId));
+            setDeleteUserConfirm(null);
+            setActionMenuOpen(null);
+        } catch (e) {
+            console.error("Delete user error:", e);
+        }
+    };
+
     const getCategoryForType = (type) => categories.find((c) => c.key === type);
 
     // ── Inline SVG icons ──
@@ -236,6 +249,12 @@ export default function AdminPage() {
     const TrashIcon = () => (
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+        </svg>
+    );
+
+    const ShieldIcon = () => (
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
         </svg>
     );
 
@@ -303,6 +322,58 @@ export default function AdminPage() {
                         ) : (
                             <button className="admin-actions-item admin-actions-danger" onClick={() => setDeleteCategoryConfirm(cat.id)}>
                                 <TrashIcon /> Delete
+                            </button>
+                        )}
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    // Shared actions dropdown for users
+    const UserActionsMenu = ({ u }) => {
+        const menuId = `user-${u.id}`;
+        
+        if (u.id === user.uid) {
+            return null; // Current user cannot manage themselves
+        }
+
+        const canManageRole = u.role === "admin" || u.email?.toLowerCase().endsWith("@esnporto.org");
+
+        return (
+            <div className="admin-actions-wrap" ref={actionMenuOpen === menuId ? menuRef : null}>
+                <button
+                    className="admin-more-btn"
+                    onClick={(e) => { e.stopPropagation(); setActionMenuOpen(actionMenuOpen === menuId ? null : menuId); }}
+                >
+                    ⋯
+                </button>
+                {actionMenuOpen === menuId && (
+                    <div className="admin-actions-menu">
+                        {canManageRole && (
+                            <button
+                                className="admin-actions-item"
+                                onClick={() => {
+                                    toggleRole(u.id, u.role);
+                                    setActionMenuOpen(null);
+                                }}
+                            >
+                                <ShieldIcon />
+                                {u.role === "admin" ? "Demote to Member" : "Promote to Admin"}
+                            </button>
+                        )}
+                        {deleteUserConfirm === u.id ? (
+                            <>
+                                <button className="admin-actions-item admin-actions-danger" onClick={() => handleDeleteUser(u.id)}>
+                                    Confirm Delete
+                                </button>
+                                <button className="admin-actions-item" onClick={() => { setDeleteUserConfirm(null); setActionMenuOpen(null); }}>
+                                    Cancel
+                                </button>
+                            </>
+                        ) : (
+                            <button className="admin-actions-item admin-actions-danger" onClick={() => setDeleteUserConfirm(u.id)}>
+                                <TrashIcon /> Delete User
                             </button>
                         )}
                     </div>
@@ -446,22 +517,22 @@ export default function AdminPage() {
 
                 {/* Users Tab */}
                 {activeTab === "users" && (
-                    <div className="card overflow-hidden">
+                    <div className="card admin-list">
                         {users.map((u, index) => (
                             <div
                                 key={u.id}
-                                className={`flex items-center gap-4 p-4 ${index !== users.length - 1 ? "border-b border-[var(--border-subtle)]" : ""
+                                className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-4 ${index !== users.length - 1 ? "border-b border-[var(--border-subtle)]" : ""
                                     }`}
                             >
                                 {u.photoURL ? (
-                                    <img src={u.photoURL} alt={u.name} className="w-9 h-9 rounded-full ring-1 ring-black/5" referrerPolicy="no-referrer" />
+                                    <img src={u.photoURL} alt={u.name} className="w-10 h-10 sm:w-11 sm:h-11 rounded-full ring-1 ring-black/5 flex-shrink-0" referrerPolicy="no-referrer" />
                                 ) : (
-                                    <div className="w-9 h-9 rounded-full bg-[var(--bg-secondary)] flex items-center justify-center text-sm font-semibold text-[var(--text-secondary)]">
+                                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[var(--bg-secondary)] flex items-center justify-center text-sm sm:text-lg font-semibold text-[var(--text-secondary)] flex-shrink-0">
                                         {u.name?.[0]}
                                     </div>
                                 )}
                                 <div className="flex-1 min-w-0">
-                                    <div className="flex items-baseline gap-1.5">
+                                    <div className="flex items-center gap-2">
                                         <p className="text-[14px] font-medium truncate">{u.name}</p>
                                         <span className={`text-[10px] font-semibold px-1.5 py-px rounded flex-shrink-0 leading-none ${u.role === "admin"
                                             ? "bg-[var(--text-primary)] text-white"
@@ -470,16 +541,9 @@ export default function AdminPage() {
                                             {u.role}
                                         </span>
                                     </div>
-                                    <p className="text-xs text-[var(--text-muted)] truncate mt-0.5">{u.email}</p>
+                                    <p className="text-[11px] sm:text-xs text-[var(--text-muted)] truncate mt-0.5">{u.email}</p>
                                 </div>
-                                {u.id !== user.uid && (u.role === "admin" || u.email?.toLowerCase().endsWith("@esnporto.org")) && (
-                                    <button
-                                        onClick={() => toggleRole(u.id, u.role)}
-                                        className="btn-secondary !py-2 !px-3.5 !text-[13px] flex-shrink-0"
-                                    >
-                                        {u.role === "admin" ? "Demote" : "Promote"}
-                                    </button>
-                                )}
+                                <UserActionsMenu u={u} />
                             </div>
                         ))}
                     </div>

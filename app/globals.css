@@ -995,6 +995,32 @@
     }
   }
 
+  .login-card-heading--desktop {
+    display: none;
+  }
+
+  .login-card-sub--desktop {
+    display: none;
+  }
+
+  @media (min-width: 768px) {
+    .login-card-heading--mobile {
+      display: none;
+    }
+
+    .login-card-sub--mobile {
+      display: none;
+    }
+
+    .login-card-heading--desktop {
+      display: block;
+    }
+
+    .login-card-sub--desktop {
+      display: block;
+    }
+  }
+
   .login-card-heading {
     font-size: 24px;
     font-weight: 700;

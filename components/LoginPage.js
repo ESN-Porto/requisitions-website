@@ -31,14 +31,6 @@ export default function LoginPage() {
                 <div className="login-bg-overlay" />
             </div>
 
-            {/* Mobile: bottom text on photo */}
-            <div className="login-mobile-info">
-                <h2 className="login-mobile-title">Requisitions Tracker</h2>
-                <p className="login-mobile-subtitle">
-                    ESN Porto equipment management platform.
-                </p>
-            </div>
-
             {/* Desktop: left-side text on photo */}
             <div className="login-desktop-info">
                 <h2 className="login-desktop-title">Requisitions Tracker</h2>
@@ -59,8 +51,12 @@ export default function LoginPage() {
                         className="login-card-logo"
                     />
 
-                    <h1 className="login-card-heading">Welcome back</h1>
-                    <p className="login-card-sub">
+                    <h1 className="login-card-heading login-card-heading--mobile">Requisitions Tracker</h1>
+                    <h1 className="login-card-heading login-card-heading--desktop">Welcome back</h1>
+                    <p className="login-card-sub login-card-sub--mobile">
+                        ESN Porto equipment management platform.
+                    </p>
+                    <p className="login-card-sub login-card-sub--desktop">
                         Sign in to continue to your dashboard
                     </p>
 

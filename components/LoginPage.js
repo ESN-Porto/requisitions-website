@@ -10,12 +10,23 @@ export default function LoginPage() {
         <div className="login-container">
             {/* Background photo */}
             <div className="login-bg">
+                {/* Desktop image */}
                 <Image
-                    src="/assets/DSCF1187.jpg"
+                    src="/assets/desktop_sign_in_photo.jpg"
                     alt="ESN Porto"
                     fill
                     priority
                     style={{ objectFit: "cover" }}
+                    className="login-bg-desktop"
+                />
+                {/* Mobile image */}
+                <Image
+                    src="/assets/mobile_sign_in_photo.png"
+                    alt="ESN Porto"
+                    fill
+                    priority
+                    style={{ objectFit: "cover" }}
+                    className="login-bg-mobile"
                 />
                 <div className="login-bg-overlay" />
             </div>
@@ -42,14 +53,15 @@ export default function LoginPage() {
                     <Image
                         src="/assets/favicon.png"
                         alt="ESN"
-                        width={44}
-                        height={44}
+                        width={40}
+                        height={40}
                         priority
+                        className="login-card-logo"
                     />
 
                     <h1 className="login-card-heading">Welcome back</h1>
                     <p className="login-card-sub">
-                        Please sign in to access the dashboard
+                        Sign in to continue to your dashboard
                     </p>
 
                     <button onClick={signInWithGoogle} className="login-google-btn">
@@ -59,7 +71,7 @@ export default function LoginPage() {
                             <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
                             <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
                         </svg>
-                        Sign in with Google
+                        Continue with Google
                     </button>
 
                     {authError && (

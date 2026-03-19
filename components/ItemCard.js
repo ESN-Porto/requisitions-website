@@ -23,7 +23,7 @@ export default function ItemCard({ item }) {
                     </div>
                 )}
 
-                {/* Minimal content: Title + Status only */}
+                {/* Title + Status */}
                 <div className="card-content">
                     <h3 className="card-title">{item.name}</h3>
                     <div className="card-status">

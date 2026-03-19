@@ -54,7 +54,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen">
       <main className="max-w-6xl mx-auto px-4 sm:px-8 py-6 sm:py-10">
-        {/* Large Title — iOS style */}
+        {/* Title */}
         <div className="flex justify-between items-start mb-6 sm:mb-10">
           <div>
             <h1 className="home-title">Requisitions</h1>
@@ -80,7 +80,7 @@ export default function HomePage() {
           </p>
         )}
 
-        {/* iOS-style Filter Pills */}
+        {/* Filter Pills */}
         <div className="filter-bar">
           {filterOptions.map(({ key, label }) => (
             <button

@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ============================================================
-   ESN Porto Requisitions Tracker — Minimalist Design System
+   ESN Porto Requisitions Tracker
    ============================================================ */
 
 /* ---------- Design Tokens ---------- */
@@ -546,7 +546,7 @@
     }
   }
 
-  /* ---------- Filter Pills — iOS Maps/Photos style ---------- */
+  /* ---------- Filter Pills ---------- */
   .filter-pill {
     padding: 7px 16px;
     border-radius: var(--radius-full);
@@ -619,7 +619,6 @@
     color: var(--text-muted);
   }
 
-  /* Apple-style inset grouped input rows */
   .input-grouped {
     width: 100%;
     padding: 14px 0;
@@ -1193,7 +1192,7 @@
   }
 
   /* ========================================================
-     QuickScan — iOS HIG-inspired mobile action page
+     QuickScan
      ======================================================== */
 
   .scan-page {
@@ -1206,7 +1205,7 @@
     background: var(--bg-primary);
   }
 
-  /* Close — frosted glass, iOS vibrancy */
+  /* Close — frosted glass */
   .scan-close {
     position: absolute;
     top: max(16px, env(safe-area-inset-top, 16px));
@@ -1459,7 +1458,7 @@
     margin-top: auto;
   }
 
-  /* Buttons — iOS squircle, 50pt touch targets */
+  /* Buttons — squircle, 50pt touch targets */
   .scan-btn-primary {
     display: flex;
     align-items: center;
@@ -1491,7 +1490,7 @@
     transform: none !important;
   }
 
-  /* Secondary — solid gray fill, no border (iOS System Gray 6) */
+  /* Secondary — solid gray fill, no border */
   .scan-btn-secondary {
     display: flex;
     align-items: center;

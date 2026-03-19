@@ -93,3 +93,7 @@ requisitions_tracker/
 ├── firestore.rules       # Firestore security rules
 └── Dockerfile            # Containerisation configuration
 ```
+
+## Class Diagram
+
+<img alt="Class UML Diagram" src="readme_imgs/class_diagram.png"/>

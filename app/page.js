@@ -4,11 +4,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import UserMenu from "@/components/UserMenu";
 import ItemCard from "@/components/ItemCard";
 import { useEffect, useState } from "react";
-import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
+import { collection, onSnapshot, query, orderBy, doc, updateDoc, addDoc, serverTimestamp } from "firebase/firestore";
 import { getFirebaseDb } from "@/lib/firebase";
 
 export default function HomePage() {
-  const { user } = useAuth();
+  const { user, userData } = useAuth();
   const [items, setItems] = useState([]);
   const [categories, setCategories] = useState([]);
   const [itemsLoading, setItemsLoading] = useState(true);
@@ -43,6 +43,31 @@ export default function HomePage() {
 
   const myItems = user ? items.filter((i) => i.currentHolder === user.uid) : [];
 
+  const handleDeliverAll = async () => {
+    if (!user || myItems.length === 0) return;
+    try {
+      for (const item of myItems) {
+        await updateDoc(doc(getFirebaseDb(), "items", item.id), {
+          status: "office",
+          currentHolder: null,
+          currentHolderName: null,
+          currentHolderPhoto: null,
+          updatedAt: serverTimestamp(),
+        });
+        await addDoc(collection(getFirebaseDb(), "transfers"), {
+          itemId: item.id, itemName: item.name, itemType: item.type,
+          fromUserId: user.uid, fromUserName: userData?.name || "Unknown",
+          toUserId: null, toUserName: "Office",
+          action: "return", eventName: null,
+          note: null,
+          timestamp: serverTimestamp(),
+        });
+      }
+    } catch (e) {
+      console.error("Deliver all error:", e);
+    }
+  };
+
   const filterOptions = [
     { key: "all", label: "All" },
     ...categories.map((cat) => ({ key: cat.key, label: cat.name })),
@@ -69,15 +94,26 @@ export default function HomePage() {
 
         {/* My Items Banner */}
         {myItems.length > 0 && (
-          <p className="my-items-banner">
-            <span className="my-items-label">With you:</span>
-            {myItems.map((item, i) => (
-              <span key={item.id}>
-                {i > 0 && <span className="my-items-sep">, </span>}
-                <a href={`/item/${item.id}`} className="my-items-link">{item.name}</a>
-              </span>
-            ))}
-          </p>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-[var(--radius-lg)] px-4 py-3 sm:px-5 sm:py-3.5 mb-6 sm:mb-8 shadow-sm transition-all ">
+            <div className="flex items-center flex-wrap gap-1.5 text-[14px]">
+              <span className="font-semibold text-[var(--text-secondary)] mr-1 tracking-tight">With you:</span>
+              {myItems.map((item, i) => (
+                <span key={item.id} className="flex items-center">
+                  <a href={`/item/${item.id}`} className="font-medium text-[var(--text-primary)] hover:opacity-70 transition-opacity">
+                    {item.name}
+                  </a>
+                  {i < myItems.length - 1 && <span className="mx-2 text-[var(--border-color)]">•</span>}
+                </span>
+              ))}
+            </div>
+            
+            <button 
+              onClick={handleDeliverAll} 
+              className="group flex-shrink-0 flex items-center justify-center gap-1.5 px-4 py-2 sm:py-1.5 bg-[var(--bg-secondary)] hover:bg-[#e8e8ed] text-[var(--text-secondary)] hover:text-[var(--text-primary)] rounded-full text-[13px] font-semibold transition-all cursor-pointer border border-transparent hover:border-[var(--border-color)]"
+            >
+              Return All
+            </button>
+          </div>
         )}
 
         {/* Filter Pills */}

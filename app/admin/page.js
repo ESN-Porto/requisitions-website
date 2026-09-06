@@ -6,38 +6,40 @@ import Link from "next/link";
 import { QRCodeCanvas } from "qrcode.react";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import {
-    collection,
-    query,
-    orderBy,
-    onSnapshot,
-    addDoc,
-    updateDoc,
-    deleteDoc,
-    doc,
-    setDoc,
-    getDoc,
-    arrayUnion,
-    arrayRemove,
-    serverTimestamp,
-} from "firebase/firestore";
-import { getFirebaseDb } from "@/lib/firebase";
+import { useItems, useCategories } from "@/lib/data";
+import { api } from "@/lib/api";
+import { slugify } from "@/lib/slug";
 
+const IT_MANAGER_URL = process.env.NEXT_PUBLIC_IT_MANAGER_URL || "https://it.esnporto.org";
+
+const CloseIcon = () => (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18" />
+        <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+);
+
+/**
+ * Admin back-office: items, categories, and a pointer to where access is
+ * managed. Who is a volunteer (can enter) and who is an admin of this app is
+ * decided in IT Manager (profiles.role + user_project_access), so the old
+ * "Users" and "Sign In allowlist" tabs are gone.
+ */
 export default function AdminPage() {
-    const { user, userData, loading, isAdmin } = useAuth();
+    const { user, isAdmin } = useAuth();
     const router = useRouter();
+    const { items } = useItems();
+    const { categories } = useCategories();
     const [activeTab, setActiveTab] = useState("items");
-    const [items, setItems] = useState([]);
-    const [users, setUsers] = useState([]);
-    const [categories, setCategories] = useState([]);
     const [showItemForm, setShowItemForm] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
-    const [formData, setFormData] = useState({ name: "", type: "" });
+    const [formData, setFormData] = useState({ name: "", categoryId: "" });
     const [imageFile, setImageFile] = useState(null);
     const [saving, setSaving] = useState(false);
     const [deleteConfirm, setDeleteConfirm] = useState(null);
     const [qrItem, setQrItem] = useState(null);
     const [actionMenuOpen, setActionMenuOpen] = useState(null); // item/cat ID or null
+    const [error, setError] = useState(null);
 
     // Category form state
     const [showCategoryForm, setShowCategoryForm] = useState(false);
@@ -46,16 +48,6 @@ export default function AdminPage() {
     const [savingCategory, setSavingCategory] = useState(false);
     const [deleteCategoryConfirm, setDeleteCategoryConfirm] = useState(null);
 
-    // User form/action state
-    const [deleteUserConfirm, setDeleteUserConfirm] = useState(null);
-
-    // Allowlist state
-    const [allowlistSettings, setAllowlistSettings] = useState({ allowAllEmails: false, emails: [] });
-    const [newAllowlistEmail, setNewAllowlistEmail] = useState("");
-    const [allowlistSearch, setAllowlistSearch] = useState("");
-    const [savingAllowlist, setSavingAllowlist] = useState(false);
-
-    // Click-away listener for action menus
     const menuRef = useRef(null);
     const closeMenu = useCallback(() => setActionMenuOpen(null), []);
 
@@ -68,102 +60,31 @@ export default function AdminPage() {
         return () => document.removeEventListener("mousedown", handleClick);
     }, [actionMenuOpen, closeMenu]);
 
+    // Server-side APIs enforce this too; the redirect is just UX.
     useEffect(() => {
-        if (!user) return;
-        const unsubItems = onSnapshot(
-            query(collection(getFirebaseDb(), "items"), orderBy("name")),
-            (snap) => setItems(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
-        );
-        const unsubUsers = onSnapshot(
-            query(collection(getFirebaseDb(), "users"), orderBy("name")),
-            (snap) => setUsers(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
-        );
-        const unsubCategories = onSnapshot(
-            query(collection(getFirebaseDb(), "categories"), orderBy("name")),
-            (snap) => setCategories(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
-        );
-        const unsubAllowlist = onSnapshot(
-            doc(getFirebaseDb(), "settings", "emailAllowlist"),
-            (snap) => {
-                if (snap.exists()) {
-                    setAllowlistSettings(snap.data());
-                }
-            }
-        );
-        return () => { unsubItems(); unsubUsers(); unsubCategories(); unsubAllowlist(); };
-    }, [user]);
-
-    if (loading) {
-        return (
-        <div className="min-h-screen">
-            <main className="max-w-3xl mx-auto px-4 sm:px-8 py-6 sm:py-10">
-                <div className="flex justify-between items-start mb-6 sm:mb-10">
-                    <div className="flex items-start gap-1 sm:gap-2">
-                        <button onClick={() => router.push("/")} className="p-2 -ml-2 mt-1 rounded-full hover:bg-[var(--bg-secondary)] transition-colors text-[var(--esn-cyan)]" aria-label="Go back">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <polyline points="15 18 9 12 15 6" />
-                            </svg>
-                        </button>
-                        <div>
-                            <h1 className="home-title">Admin</h1>
-                            <p className="home-subtitle">Manage requisitions, categories and users</p>
-                        </div>
-                    </div>
-                    <div className="mt-1">
-                        <UserMenu />
-                    </div>
-                </div>
-                <div className="animate-pulse w-full max-w-3xl mx-auto mt-4">
-                    <div className="flex gap-2.5 mb-6 overflow-hidden">
-                        <div className="h-[34px] sm:h-[36px] w-[110px] bg-[var(--border-subtle)] rounded-full"></div>
-                        <div className="h-[34px] sm:h-[36px] w-[120px] bg-[var(--border-subtle)] rounded-full"></div>
-                        <div className="h-[34px] sm:h-[36px] w-[90px] bg-[var(--border-subtle)] rounded-full"></div>
-                    </div>
-                    
-                    <div className="flex justify-end mb-4">
-                        <div className="h-[40px] w-[150px] bg-[var(--border-subtle)] rounded-xl"></div>
-                    </div>
-
-                    <div className="card admin-list bg-[var(--bg-card)]">
-                        {[1, 2, 3, 4].map((i) => (
-                            <div key={i} className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-4 ${i !== 4 ? "border-b border-[var(--border-subtle)]" : ""}`}>
-                                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[var(--bg-secondary)] flex-shrink-0"></div>
-                                <div className="flex-1">
-                                    <div className="h-4 w-1/3 sm:w-1/4 bg-[var(--bg-secondary)] rounded-md mb-2"></div>
-                                    <div className="h-3 w-1/2 sm:w-1/3 bg-[var(--bg-secondary)] rounded-md"></div>
-                                </div>
-                                <div className="w-8 h-8 rounded-full bg-[var(--bg-secondary)] flex-shrink-0"></div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </main>
-        </div>
-        );
-    }
-
-    useEffect(() => {
-        if (!loading && (!user || !isAdmin)) {
-            router.replace("/");
-        }
-    }, [loading, user, isAdmin, router]);
+        if (!user || !isAdmin) router.replace("/");
+    }, [user, isAdmin, router]);
 
     if (!user || !isAdmin) {
         return null;
     }
 
+    const showError = (e) => setError(e?.message || "Something went wrong");
+
     // ── Item form helpers ──
     const openAddForm = () => {
         setEditingItem(null);
-        setFormData({ name: "", type: categories[0]?.key || "" });
+        setFormData({ name: "", categoryId: categories[0]?.id || "" });
         setImageFile(null);
+        setError(null);
         setShowItemForm(true);
     };
 
     const openEditForm = (item) => {
         setEditingItem(item);
-        setFormData({ name: item.name, type: item.type });
+        setFormData({ name: item.name, categoryId: item.category_id || "" });
         setImageFile(null);
+        setError(null);
         setShowItemForm(true);
         setActionMenuOpen(null);
     };
@@ -171,48 +92,38 @@ export default function AdminPage() {
     const handleSaveItem = async () => {
         if (!formData.name.trim()) return;
         setSaving(true);
+        setError(null);
         try {
-            let photoURL = editingItem?.photoURL || null;
+            let photoUrl = editingItem?.photo_url || null;
             if (imageFile) {
-                const token = await user.getIdToken();
                 const fd = new FormData();
                 fd.append("file", imageFile);
-                const res = await fetch("/api/upload", {
-                    method: "POST",
-                    headers: { "Authorization": `Bearer ${token}` },
-                    body: fd
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error);
-                photoURL = data.url;
+                const data = await api("/api/upload", { formData: fd });
+                photoUrl = data.url;
             }
+            const body = { name: formData.name.trim(), categoryId: formData.categoryId || null, photoUrl };
             if (editingItem) {
-                await updateDoc(doc(getFirebaseDb(), "items", editingItem.id), {
-                    name: formData.name, type: formData.type, photoURL, updatedAt: serverTimestamp(),
-                });
+                await api(`/api/items/${editingItem.id}`, { method: "PATCH", body });
             } else {
-                await addDoc(collection(getFirebaseDb(), "items"), {
-                    name: formData.name, type: formData.type, photoURL,
-                    status: "office", currentHolder: null, currentHolderName: null, updatedAt: serverTimestamp(),
-                });
+                await api("/api/items", { body });
             }
             setShowItemForm(false);
             setEditingItem(null);
-            setFormData({ name: "", type: categories[0]?.key || "" });
+            setFormData({ name: "", categoryId: categories[0]?.id || "" });
             setImageFile(null);
         } catch (e) {
-            console.error("Save error:", e);
+            showError(e);
         }
         setSaving(false);
     };
 
     const handleDeleteItem = async (itemId) => {
         try {
-            await deleteDoc(doc(getFirebaseDb(), "items", itemId));
+            await api(`/api/items/${itemId}`, { method: "DELETE" });
             setDeleteConfirm(null);
             setActionMenuOpen(null);
         } catch (e) {
-            console.error("Delete error:", e);
+            showError(e);
         }
     };
 
@@ -220,12 +131,14 @@ export default function AdminPage() {
     const openAddCategoryForm = () => {
         setEditingCategory(null);
         setCategoryFormData({ name: "" });
+        setError(null);
         setShowCategoryForm(true);
     };
 
     const openEditCategoryForm = (cat) => {
         setEditingCategory(cat);
         setCategoryFormData({ name: cat.name });
+        setError(null);
         setShowCategoryForm(true);
         setActionMenuOpen(null);
     };
@@ -233,98 +146,32 @@ export default function AdminPage() {
     const handleSaveCategory = async () => {
         if (!categoryFormData.name.trim()) return;
         setSavingCategory(true);
+        setError(null);
         try {
-            const key = categoryFormData.name.trim().toLowerCase().replace(/\s+/g, "-");
-            const payload = { name: categoryFormData.name.trim(), key };
+            const body = { name: categoryFormData.name.trim() };
             if (editingCategory) {
-                await updateDoc(doc(getFirebaseDb(), "categories", editingCategory.id), payload);
+                await api(`/api/categories/${editingCategory.id}`, { method: "PATCH", body });
             } else {
-                await addDoc(collection(getFirebaseDb(), "categories"), {
-                    ...payload,
-                    createdAt: serverTimestamp(),
-                });
+                await api("/api/categories", { body });
             }
             setShowCategoryForm(false);
             setEditingCategory(null);
             setCategoryFormData({ name: "" });
         } catch (e) {
-            console.error("Save category error:", e);
+            showError(e);
         }
         setSavingCategory(false);
     };
 
     const handleDeleteCategory = async (catId) => {
         try {
-            await deleteDoc(doc(getFirebaseDb(), "categories", catId));
+            await api(`/api/categories/${catId}`, { method: "DELETE" });
             setDeleteCategoryConfirm(null);
             setActionMenuOpen(null);
         } catch (e) {
-            console.error("Delete category error:", e);
+            showError(e);
         }
     };
-
-    const toggleRole = async (userId, currentRole) => {
-        const newRole = currentRole === "admin" ? "member" : "admin";
-        try {
-            await updateDoc(doc(getFirebaseDb(), "users", userId), { role: newRole });
-        } catch (e) {
-            console.error("Role update error:", e);
-        }
-    };
-
-    const handleDeleteUser = async (userId) => {
-        try {
-            await deleteDoc(doc(getFirebaseDb(), "users", userId));
-            setDeleteUserConfirm(null);
-            setActionMenuOpen(null);
-        } catch (e) {
-            console.error("Delete user error:", e);
-        }
-    };
-
-    const getCategoryForType = (type) => categories.find((c) => c.key === type);
-
-    // ── Allowlist helpers ──
-    const handleToggleAllowAll = async () => {
-        setSavingAllowlist(true);
-        try {
-            await setDoc(doc(getFirebaseDb(), "settings", "emailAllowlist"), {
-                allowAllEmails: !allowlistSettings.allowAllEmails,
-            }, { merge: true });
-        } catch (e) {
-            console.error("Toggle allowAll error:", e);
-        }
-        setSavingAllowlist(false);
-    };
-
-    const handleAddAllowlistEmail = async () => {
-        const email = newAllowlistEmail.trim().toLowerCase();
-        if (!email || !email.includes("@")) return;
-        setSavingAllowlist(true);
-        try {
-            await setDoc(doc(getFirebaseDb(), "settings", "emailAllowlist"), {
-                emails: arrayUnion(email),
-            }, { merge: true });
-            setNewAllowlistEmail("");
-        } catch (e) {
-            console.error("Add email error:", e);
-        }
-        setSavingAllowlist(false);
-    };
-
-    const handleRemoveAllowlistEmail = async (email) => {
-        try {
-            await setDoc(doc(getFirebaseDb(), "settings", "emailAllowlist"), {
-                emails: arrayRemove(email),
-            }, { merge: true });
-        } catch (e) {
-            console.error("Remove email error:", e);
-        }
-    };
-
-    const filteredAllowlistEmails = (allowlistSettings.emails || [])
-        .filter((e) => e.toLowerCase().includes(allowlistSearch.toLowerCase()))
-        .sort((a, b) => a.localeCompare(b));
 
     // ── Inline SVG icons ──
     const QrIcon = () => (
@@ -345,12 +192,6 @@ export default function AdminPage() {
     const TrashIcon = () => (
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-        </svg>
-    );
-
-    const ShieldIcon = () => (
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
         </svg>
     );
 
@@ -426,58 +267,6 @@ export default function AdminPage() {
         );
     };
 
-    // Shared actions dropdown for users
-    const UserActionsMenu = ({ u }) => {
-        const menuId = `user-${u.id}`;
-        
-        if (u.id === user.uid) {
-            return null; // Current user cannot manage themselves
-        }
-
-        const canManageRole = u.role === "admin" || u.email?.toLowerCase().endsWith("@esnporto.org");
-
-        return (
-            <div className="admin-actions-wrap" ref={actionMenuOpen === menuId ? menuRef : null}>
-                <button
-                    className="admin-more-btn"
-                    onClick={(e) => { e.stopPropagation(); setActionMenuOpen(actionMenuOpen === menuId ? null : menuId); }}
-                >
-                    ⋯
-                </button>
-                {actionMenuOpen === menuId && (
-                    <div className="admin-actions-menu">
-                        {canManageRole && (
-                            <button
-                                className="admin-actions-item"
-                                onClick={() => {
-                                    toggleRole(u.id, u.role);
-                                    setActionMenuOpen(null);
-                                }}
-                            >
-                                <ShieldIcon />
-                                {u.role === "admin" ? "Demote to Member" : "Promote to Admin"}
-                            </button>
-                        )}
-                        {deleteUserConfirm === u.id ? (
-                            <>
-                                <button className="admin-actions-item admin-actions-danger" onClick={() => handleDeleteUser(u.id)}>
-                                    Confirm Delete
-                                </button>
-                                <button className="admin-actions-item" onClick={() => { setDeleteUserConfirm(null); setActionMenuOpen(null); }}>
-                                    Cancel
-                                </button>
-                            </>
-                        ) : (
-                            <button className="admin-actions-item admin-actions-danger" onClick={() => setDeleteUserConfirm(u.id)}>
-                                <TrashIcon /> Delete User
-                            </button>
-                        )}
-                    </div>
-                )}
-            </div>
-        );
-    };
-
     return (
         <div className="min-h-screen">
             <main className="max-w-3xl mx-auto px-4 sm:px-8 py-6 sm:py-10">
@@ -491,7 +280,7 @@ export default function AdminPage() {
                         </button>
                         <div>
                             <h1 className="home-title">Admin</h1>
-                            <p className="home-subtitle">Manage requisitions, categories and users</p>
+                            <p className="home-subtitle">Manage requisitions and categories</p>
                         </div>
                     </div>
                     <div className="mt-1">
@@ -504,8 +293,7 @@ export default function AdminPage() {
                     {[
                         { key: "items", label: `Requisitions (${items.length})` },
                         { key: "categories", label: `Categories (${categories.length})` },
-                        { key: "users", label: `Users (${users.length})` },
-                        { key: "signin", label: "Sign In" },
+                        { key: "access", label: "Access" },
                     ].map(({ key, label }) => (
                         <button
                             key={key}
@@ -516,6 +304,13 @@ export default function AdminPage() {
                         </button>
                     ))}
                 </div>
+
+                {error && !showItemForm && !showCategoryForm && (
+                    <div className="card p-4 mb-4 text-[13px] text-[#ff3b30] flex items-center justify-between gap-3">
+                        <span>{error}</span>
+                        <button onClick={() => setError(null)} className="text-[var(--text-muted)] hover:text-[var(--text-primary)]">Dismiss</button>
+                    </div>
+                )}
 
                 {/* Items Tab */}
                 {activeTab === "items" && (
@@ -538,42 +333,37 @@ export default function AdminPage() {
                             </div>
                         ) : (
                             <div className="card admin-list">
-                                {items.map((item, index) => {
-                                    const cat = getCategoryForType(item.type);
-                                    return (
-                                        <div
-                                            key={item.id}
-                                            className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-4 ${index !== items.length - 1 ? "border-b border-[var(--border-subtle)]" : ""
-                                                }`}
-                                        >
-                                            <Link href={`/item/${item.id}`} className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0 hover:opacity-70 transition-opacity">
-                                                {item.photoURL ? (
-                                                    <img src={item.photoURL} alt={item.name} className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl object-cover ring-1 ring-black/5 flex-shrink-0" />
-                                                ) : (
-                                                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[var(--bg-secondary)] flex items-center justify-center text-lg sm:text-xl flex-shrink-0">
-                                                        {"\u{1F4E6}"}
-                                                    </div>
-                                                )}
-                                                <div className="min-w-0">
-                                                    <p className="font-medium text-[13px] sm:text-[14px] truncate">{item.name}</p>
-                                                    <div className="flex items-center gap-1.5 mt-1">
-                                                        <span className="text-[11px] sm:text-[12px] text-[var(--text-muted)]">
-                                                            {cat?.name || item.type}
-                                                        </span>
-                                                        <span className="text-[11px] text-[var(--text-muted)]">·</span>
-                                                        <span className="text-[11px] sm:text-[12px] text-[var(--text-muted)]">
-                                                            {item.status === "office" ? "In Office" : item.currentHolderName}
-                                                        </span>
-                                                    </div>
+                                {items.map((item, index) => (
+                                    <div
+                                        key={item.id}
+                                        className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-4 ${index !== items.length - 1 ? "border-b border-[var(--border-subtle)]" : ""}`}
+                                    >
+                                        <Link href={`/item/${item.id}`} className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0 hover:opacity-70 transition-opacity">
+                                            {item.photo_url ? (
+                                                <img src={item.photo_url} alt={item.name} className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl object-cover ring-1 ring-black/5 flex-shrink-0" />
+                                            ) : (
+                                                <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[var(--bg-secondary)] flex items-center justify-center text-lg sm:text-xl flex-shrink-0">
+                                                    {"\u{1F4E6}"}
                                                 </div>
-                                            </Link>
+                                            )}
+                                            <div className="min-w-0">
+                                                <p className="font-medium text-[13px] sm:text-[14px] truncate">{item.name}</p>
+                                                <div className="flex items-center gap-1.5 mt-1">
+                                                    <span className="text-[11px] sm:text-[12px] text-[var(--text-muted)]">
+                                                        {item.category_name || "No category"}
+                                                    </span>
+                                                    <span className="text-[11px] text-[var(--text-muted)]">·</span>
+                                                    <span className="text-[11px] sm:text-[12px] text-[var(--text-muted)]">
+                                                        {item.status === "office" ? "In Office" : item.holder_name || "Checked out"}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </Link>
 
-
-                                            {/* ⋯ actions menu */}
-                                            <ItemActionsMenu item={item} />
-                                        </div>
-                                    );
-                                })}
+                                        {/* ⋯ actions menu */}
+                                        <ItemActionsMenu item={item} />
+                                    </div>
+                                ))}
                             </div>
                         )}
                     </div>
@@ -595,12 +385,11 @@ export default function AdminPage() {
                         ) : (
                             <div className="card admin-list">
                                 {categories.map((cat, index) => {
-                                    const itemCount = items.filter((i) => i.type === cat.key).length;
+                                    const itemCount = items.filter((i) => i.category_id === cat.id).length;
                                     return (
                                         <div
                                             key={cat.id}
-                                            className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-4 ${index !== categories.length - 1 ? "border-b border-[var(--border-subtle)]" : ""
-                                                }`}
+                                            className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-4 ${index !== categories.length - 1 ? "border-b border-[var(--border-subtle)]" : ""}`}
                                         >
                                             <div className="admin-cat-icon">
                                                 {cat.name?.[0]?.toUpperCase() || "?"}
@@ -612,7 +401,6 @@ export default function AdminPage() {
                                                 </p>
                                             </div>
 
-
                                             {/* ⋯ actions menu */}
                                             <CatActionsMenu cat={cat} />
                                         </div>
@@ -623,130 +411,27 @@ export default function AdminPage() {
                     </div>
                 )}
 
-                {/* Users Tab */}
-                {activeTab === "users" && (
-                    <div className="card admin-list">
-                        {users.map((u, index) => (
-                            <div
-                                key={u.id}
-                                className={`flex items-center gap-3 sm:gap-4 p-3 sm:p-4 ${index !== users.length - 1 ? "border-b border-[var(--border-subtle)]" : ""
-                                    }`}
-                            >
-                                {u.photoURL ? (
-                                    <img src={u.photoURL} alt={u.name} className="w-10 h-10 sm:w-11 sm:h-11 rounded-full ring-1 ring-black/5 flex-shrink-0" referrerPolicy="no-referrer" />
-                                ) : (
-                                    <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[var(--bg-secondary)] flex items-center justify-center text-sm sm:text-lg font-semibold text-[var(--text-secondary)] flex-shrink-0">
-                                        {u.name?.[0]}
-                                    </div>
-                                )}
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2">
-                                        <p className="text-[14px] font-medium truncate">{u.name}</p>
-                                        <span className={`text-[10px] font-semibold px-1.5 py-px rounded flex-shrink-0 leading-none ${u.role === "admin"
-                                            ? "bg-[var(--text-primary)] text-white"
-                                            : "bg-[var(--bg-secondary)] text-[var(--text-muted)]"
-                                            }`}>
-                                            {u.role}
-                                        </span>
-                                    </div>
-                                    <p className="text-[11px] sm:text-xs text-[var(--text-muted)] truncate mt-0.5">{u.email}</p>
-                                </div>
-                                <UserActionsMenu u={u} />
-                            </div>
-                        ))}
-                    </div>
-                )}
-
-                {/* Sign In Tab */}
-                {activeTab === "signin" && (
-                    <div>
-                        {/* Toggle: Allow all emails */}
-                        <div className="card mb-4">
-                            <div className="settings-toggle-row">
-                                <div className="settings-toggle-label">
-                                    <span className="settings-toggle-title">Allow all emails</span>
-                                    <span className="settings-toggle-desc">When enabled, any email can create an account</span>
-                                </div>
-                                <label className="toggle-switch">
-                                    <input
-                                        type="checkbox"
-                                        checked={allowlistSettings.allowAllEmails}
-                                        onChange={handleToggleAllowAll}
-                                        disabled={savingAllowlist}
-                                    />
-                                    <span className="toggle-slider" />
-                                </label>
-                            </div>
-                        </div>
-
-                        {/* Email allowlist */}
-                        <div className={allowlistSettings.allowAllEmails ? "settings-section-disabled" : ""}>
-                            <p className="text-[12px] text-[var(--text-muted)] mb-2 px-1">
-                                All <strong>@esnporto.org</strong> emails can always sign in. Add non-ESN emails below.
+                {/* Access Tab */}
+                {activeTab === "access" && (
+                    <div className="card p-5 sm:p-6 space-y-4">
+                        <div>
+                            <h2 className="font-semibold text-[15px] mb-1">Who can use this app</h2>
+                            <p className="text-[13px] text-[var(--text-secondary)] leading-relaxed">
+                                Every ESN Porto <strong>volunteer</strong> can sign in, see the items and pick up, return or pass them.
+                                Volunteers are the people IT Manager knows as staff — there is no separate user list here.
                             </p>
-                            <div className="card">
-                                {/* Add email */}
-                                <div className="allowlist-add-row">
-                                    <input
-                                        type="email"
-                                        placeholder="Add email address..."
-                                        value={newAllowlistEmail}
-                                        onChange={(e) => setNewAllowlistEmail(e.target.value)}
-                                        onKeyDown={(e) => e.key === "Enter" && handleAddAllowlistEmail()}
-                                        className="input-field"
-                                    />
-                                    <button
-                                        onClick={handleAddAllowlistEmail}
-                                        disabled={!newAllowlistEmail.trim() || savingAllowlist}
-                                        className="btn-primary disabled:opacity-40"
-                                        style={{ whiteSpace: "nowrap", padding: "0 16px" }}
-                                    >
-                                        Add
-                                    </button>
-                                </div>
-
-                                {/* Search */}
-                                {(allowlistSettings.emails || []).length > 5 && (
-                                    <div className="allowlist-search">
-                                        <input
-                                            type="text"
-                                            placeholder="Search emails..."
-                                            value={allowlistSearch}
-                                            onChange={(e) => setAllowlistSearch(e.target.value)}
-                                            className="input-field"
-                                        />
-                                    </div>
-                                )}
-
-                                {/* Count */}
-                                <div className="allowlist-count">
-                                    {filteredAllowlistEmails.length} email{filteredAllowlistEmails.length !== 1 ? "s" : ""}
-                                    {allowlistSearch && ` matching "${allowlistSearch}"`}
-                                </div>
-
-                                {/* Email list */}
-                                {filteredAllowlistEmails.length === 0 ? (
-                                    <div className="allowlist-empty">
-                                        {allowlistSearch ? "No matching emails" : "No emails in the allowlist yet"}
-                                    </div>
-                                ) : (
-                                    <div className="allowlist-emails">
-                                        {filteredAllowlistEmails.map((email) => (
-                                            <div key={email} className="allowlist-email-row">
-                                                <span className="allowlist-email-text">{email}</span>
-                                                <button
-                                                    className="allowlist-remove-btn"
-                                                    onClick={() => handleRemoveAllowlistEmail(email)}
-                                                    title="Remove email"
-                                                >
-                                                    ×
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
                         </div>
+                        <div>
+                            <h2 className="font-semibold text-[15px] mb-1">Who is an admin</h2>
+                            <p className="text-[13px] text-[var(--text-secondary)] leading-relaxed">
+                                ESN admins are admins everywhere. To make another volunteer an admin of <em>only</em> this app,
+                                grant them the <span className="font-mono text-[12px]">admin</span> role for project{" "}
+                                <span className="font-mono text-[12px]">requisitions_tracker</span> in IT Manager.
+                            </p>
+                        </div>
+                        <a href={IT_MANAGER_URL} target="_blank" rel="noreferrer" className="btn-primary inline-flex">
+                            Open IT Manager
+                        </a>
                     </div>
                 )}
 
@@ -762,10 +447,7 @@ export default function AdminPage() {
                                     onClick={() => setShowItemForm(false)}
                                     className="p-1.5 rounded-lg hover:bg-[var(--bg-secondary)] transition-colors text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                                 >
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <line x1="18" y1="6" x2="6" y2="18" />
-                                        <line x1="6" y1="6" x2="18" y2="18" />
-                                    </svg>
+                                    <CloseIcon />
                                 </button>
                             </div>
                             <div className="space-y-4">
@@ -782,12 +464,13 @@ export default function AdminPage() {
                                 <div>
                                     <label className="text-[13px] font-medium text-[var(--text-secondary)] mb-1.5 block">Category</label>
                                     <select
-                                        value={formData.type}
-                                        onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                                        value={formData.categoryId}
+                                        onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
                                         className="input-field"
                                     >
+                                        <option value="">No category</option>
                                         {categories.map((cat) => (
-                                            <option key={cat.id} value={cat.key}>{cat.name}</option>
+                                            <option key={cat.id} value={cat.id}>{cat.name}</option>
                                         ))}
                                     </select>
                                 </div>
@@ -799,10 +482,11 @@ export default function AdminPage() {
                                         onChange={(e) => setImageFile(e.target.files?.[0] || null)}
                                         className="input-field text-sm file:mr-3 file:py-1 file:px-3 file:rounded-md file:border-0 file:bg-[var(--text-primary)] file:text-white file:font-medium file:text-xs file:cursor-pointer"
                                     />
-                                    {editingItem?.photoURL && !imageFile && (
+                                    {editingItem?.photo_url && !imageFile && (
                                         <p className="text-xs text-[var(--text-muted)] mt-1.5">Current photo will be kept</p>
                                     )}
                                 </div>
+                                {error && <p className="text-[13px] text-[#ff3b30]">{error}</p>}
                                 <div className="flex gap-3 pt-2">
                                     <button
                                         onClick={handleSaveItem}
@@ -818,7 +502,7 @@ export default function AdminPage() {
                     </div>
                 )}
 
-                {/* Category Form Modal — simplified, no color picker */}
+                {/* Category Form Modal */}
                 {showCategoryForm && (
                     <div className="modal-overlay" onClick={() => setShowCategoryForm(false)}>
                         <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -830,10 +514,7 @@ export default function AdminPage() {
                                     onClick={() => setShowCategoryForm(false)}
                                     className="p-1.5 rounded-lg hover:bg-[var(--bg-secondary)] transition-colors text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                                 >
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <line x1="18" y1="6" x2="6" y2="18" />
-                                        <line x1="6" y1="6" x2="18" y2="18" />
-                                    </svg>
+                                    <CloseIcon />
                                 </button>
                             </div>
                             <div className="space-y-4">
@@ -848,10 +529,11 @@ export default function AdminPage() {
                                     />
                                     {categoryFormData.name.trim() && (
                                         <p className="text-[12px] text-[var(--text-muted)] mt-1.5">
-                                            Key: <span className="font-mono">{categoryFormData.name.trim().toLowerCase().replace(/\s+/g, "-")}</span>
+                                            Key: <span className="font-mono">{slugify(categoryFormData.name)}</span>
                                         </p>
                                     )}
                                 </div>
+                                {error && <p className="text-[13px] text-[#ff3b30]">{error}</p>}
                                 <div className="flex gap-3 pt-2">
                                     <button
                                         onClick={handleSaveCategory}
@@ -878,9 +560,7 @@ export default function AdminPage() {
                             onClick={() => setQrItem(null)}
                             className="p-1.5 rounded-lg hover:bg-[var(--bg-secondary)] transition-colors text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                         >
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                            </svg>
+                            <CloseIcon />
                         </button>
                     </div>
                     <div className="flex flex-col items-center gap-4">
@@ -895,6 +575,11 @@ export default function AdminPage() {
                         <div className="text-center">
                             <p className="font-semibold text-[15px]">{qrItem.name}</p>
                             <p className="text-[12px] text-[var(--text-muted)] mt-0.5 font-mono">/scan/{qrItem.id}</p>
+                            {qrItem.legacy_id && (
+                                <p className="text-[11px] text-[var(--text-muted)] mt-1">
+                                    Older stickers (<span className="font-mono">/scan/{qrItem.legacy_id}</span>) keep working.
+                                </p>
+                            )}
                         </div>
                         <button
                             onClick={() => {

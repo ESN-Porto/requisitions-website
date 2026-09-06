@@ -9,10 +9,10 @@ export default function ItemCard({ item }) {
         <Link href={`/item/${item.id}`}>
             <div className="card card-interactive overflow-hidden">
                 {/* Edge-to-edge image */}
-                {item.photoURL ? (
+                {item.photo_url ? (
                     <div className="item-image-wrapper">
                         <img
-                            src={item.photoURL}
+                            src={item.photo_url}
                             alt={item.name}
                             className="item-image"
                         />
@@ -29,7 +29,7 @@ export default function ItemCard({ item }) {
                     <div className="card-status">
                         <span className={`card-status-dot ${isInOffice ? "office" : "out"}`}></span>
                         <span className="card-status-text">
-                            {isInOffice ? "In Office" : `With ${item.currentHolderName || "Someone"}`}
+                            {isInOffice ? "In Office" : `With ${item.holder_name || "Someone"}`}
                         </span>
                     </div>
                 </div>

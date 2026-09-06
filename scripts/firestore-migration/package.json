@@ -1,0 +1,16 @@
+{
+  "name": "requisitions-firestore-migration",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "One-off Firestore -> Supabase data migration for the requisitions tracker",
+  "scripts": {
+    "dry-run": "node migrate.mjs",
+    "apply": "node migrate.mjs --apply"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.115.0",
+    "dotenv": "^17.2.3",
+    "firebase-admin": "^13.6.0"
+  }
+}

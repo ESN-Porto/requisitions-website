@@ -6,7 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 export default function UserMenu() {
-    const { user, userData, logout, isAdmin, signInWithGoogle } = useAuth();
+    const { user, userData, logout, isAdmin } = useAuth();
     const [showMenu, setShowMenu] = useState(false);
     const menuRef = useRef(null);
     const pathname = usePathname();
@@ -23,9 +23,9 @@ export default function UserMenu() {
 
     if (!user) {
         return (
-            <button onClick={signInWithGoogle} className="btn-secondary !py-1.5 !px-3 !text-[13px] h-[34px]">
+            <Link href="/login" className="btn-secondary !py-1.5 !px-3 !text-[13px] h-[34px]">
                 Sign In
-            </button>
+            </Link>
         );
     }
 
@@ -35,19 +35,19 @@ export default function UserMenu() {
                 onClick={() => setShowMenu(!showMenu)}
                 className="relative block cursor-pointer outline-none hover:opacity-80 transition-opacity"
             >
-                {userData?.photoURL ? (
+                {userData?.photo_url ? (
                     <img
-                        src={userData.photoURL}
+                        src={userData.photo_url}
                         alt={userData?.name || "User"}
                         className="w-9 h-9 sm:w-10 sm:h-10 rounded-full ring-1 ring-black/5 object-cover"
                         referrerPolicy="no-referrer"
                     />
                 ) : (
                     <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[var(--bg-secondary)] flex items-center justify-center text-[15px] font-semibold text-[var(--text-secondary)] ring-1 ring-black/5">
-                        {userData?.name?.[0] || "?"}
+                        {userData?.name?.[0]?.toUpperCase() || "?"}
                     </div>
                 )}
-                
+
                 {/* Admin visual indicator badge */}
                 {isAdmin && (
                     <div className="absolute -bottom-1 -right-1 bg-[var(--esn-cyan)] text-white p-[3px] rounded-full ring-2 ring-white shadow-sm flex items-center justify-center">
@@ -62,10 +62,10 @@ export default function UserMenu() {
                 <div className="absolute right-0 top-full mt-2 w-56 card shadow-lg p-1.5 z-50 origin-top-right animate-in fade-in zoom-in-95 duration-200">
                     <div className="px-3 py-2.5 border-b border-[var(--border-subtle)] mb-1.5 flex flex-col items-start min-w-0">
                         <p className="text-[14px] font-medium text-[var(--text-primary)] truncate w-full">{userData?.name}</p>
-                        <p className="text-[12px] text-[var(--text-muted)] truncate mt-0.5 w-full">{userData?.email}</p>
+                        <p className="text-[12px] text-[var(--text-muted)] truncate mt-0.5 w-full">{userData?.email || user.email}</p>
                         {isAdmin && <span className="mt-1 text-[10px] font-semibold bg-[var(--esn-cyan)]/10 text-[var(--esn-cyan)] px-1.5 py-0.5 rounded uppercase tracking-wider">Admin</span>}
                     </div>
-                    
+
                     <div className="flex flex-col gap-0.5">
                         {isAdmin && pathname !== "/admin" && (
                             <Link

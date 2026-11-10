@@ -85,7 +85,20 @@ Identity and permissions live in IT Manager's shared `public` schema, not in thi
 | Question | Answered by | Who qualifies |
 |----------|-------------|---------------|
 | Can this user enter? | `public.has_project_access('requisitions_tracker')` | `profiles.role` is `volunteer` or `admin` (project `access_level = staff_only`) |
-| Is this user an admin here? | `public.is_project_admin('requisitions_tracker')` | ESN admins, or a `public.user_project_access` row for `requisitions_tracker` with role `admin` |
+| What can this user do here? | `requisitions_tracker.can(key)` / `requisitions_tracker.my_capabilities()` | Tier `use` keys: anyone with project access. Tier `manage` keys: project access **and** project admin (ESN admins, or a `public.user_project_access` row for `requisitions_tracker` with role `admin`) |
+
+Capabilities are keys `requisitions.<resource>.<action>`, listed in `requisitions_tracker.capabilities`:
+
+| Key | Tier | Used in the app for |
+|-----|------|---------------------|
+| `requisitions.inventory.view` | use | reading items, categories, history, volunteers (RLS) |
+| `requisitions.items.checkout` / `.return` / `.transfer` | use | `move_item` (pick up, return, pass, take) |
+| `requisitions.items.override` | manage | `admin_move_item` (force-return, assign), `/api/items/:id/admin-move`, admin controls on the item page |
+| `requisitions.catalogue.manage` | manage | creating/editing/deleting items and categories, photo upload, `/admin` |
+| `requisitions.audit.view` | manage | reading `catalogue_audit` (RLS) |
+| `requisitions.access.manage` | manage | granted in IT Manager, not used by this app |
+
+A volunteer gets the 4 `use` keys, a Requisitions admin gets all 8, anyone else gets none. The database (RLS + RPCs) enforces every key; the API routes check them again server-side; the UI reads `my_capabilities()` only to hide buttons.
 
 To change who can do what, use **IT Manager** (`https://it.esnporto.org`):
 
@@ -104,9 +117,9 @@ Browser (Next.js client)
   |  writes: fetch() to /api/*  (never straight to the DB)
   v
 Next.js server (proxy.js + app/api/*)
-  |  session check on every route (requireUser / requireAdmin)
+  |  session check on every route (requireUser / requireCapability(key))
   |  user-scoped client  -> RPC move_item / admin_move_item, inserts/updates on items & categories
-  |  service-role client -> Storage bucket item-images (after admin check), public.projects
+  |  service-role client -> Storage bucket item-images (after the catalogue.manage check), public.projects
   v
 Supabase (supa.esnporto.org)
   auth.users, public.profiles, public.projects, public.user_project_access   (owned by IT Manager)
@@ -130,18 +143,18 @@ Supabase (supa.esnporto.org)
 
 ### API routes
 
-All routes verify the session server-side; admin routes also call `is_project_admin`.
+All routes verify the session server-side (401 without one). Admin routes also call `requireCapability(key)`, which reads `my_capabilities()` and returns 403 when the key is missing (fails closed on any error).
 
 | Route | Who | What |
 |-------|-----|------|
-| `POST /api/items` | admin | create item |
-| `PATCH /api/items/:id` | admin | rename / recategorise / change photo (status and holder are not editable here) |
-| `DELETE /api/items/:id` | admin | delete item and its photo |
-| `POST /api/items/:id/move` | volunteer | `move_item` as the caller: `pickup`, `return`, `pass`, `take` |
-| `POST /api/items/:id/admin-move` | admin | `admin_move_item`: `return`, `assign` |
-| `POST /api/categories` | admin | create category |
-| `PATCH` / `DELETE /api/categories/:id` | admin | rename / delete (items keep existing without category) |
-| `POST /api/upload` | admin | multipart image -> Storage `item-images` (service role, magic-byte type check, 10 MB) |
+| `POST /api/items` | `requisitions.catalogue.manage` | create item |
+| `PATCH /api/items/:id` | `requisitions.catalogue.manage` | rename / recategorise / change photo (status and holder are not editable here) |
+| `DELETE /api/items/:id` | `requisitions.catalogue.manage` | delete item and its photo |
+| `POST /api/items/:id/move` | volunteer | `move_item` as the caller: `pickup`, `return`, `pass`, `take` (the RPC checks the key per action) |
+| `POST /api/items/:id/admin-move` | `requisitions.items.override` | `admin_move_item`: `return`, `assign` |
+| `POST /api/categories` | `requisitions.catalogue.manage` | create category |
+| `PATCH` / `DELETE /api/categories/:id` | `requisitions.catalogue.manage` | rename / delete (items keep existing without category) |
+| `POST /api/upload` | `requisitions.catalogue.manage` | multipart image -> Storage `item-images` (service role, magic-byte type check, 10 MB) |
 | `GET /api/project-config` | public | project metadata from `public.projects` for the login page |
 
 ### Project structure
@@ -160,9 +173,10 @@ requisitions-website/
 │   ├── scan/[id]/        # QuickScan page (uuid or legacy id)
 │   └── page.js           # Dashboard
 ├── components/           # ItemCard, TransferModal, UserMenu
-├── contexts/             # AuthContext (session + isAdmin)
+├── contexts/             # AuthContext (session + capabilities, can(key))
 ├── lib/
-│   ├── auth/permissions.js   # requireUser / requireAdmin, has_project_access, is_project_admin
+│   ├── auth/permissions.js   # requireUser / requireCapability, getCapabilities (my_capabilities), has_project_access
+│   ├── auth/capabilities.js  # capability key constants used by routes and UI
 │   ├── supabase/             # client, server, admin (service role), middleware
 │   ├── data.js               # live query hooks (items, categories, transfers, volunteers)
 │   └── storage.js            # bucket name + URL helpers

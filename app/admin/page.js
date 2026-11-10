@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@/contexts/AuthContext";
+import { CAP } from "@/lib/auth/capabilities";
 import UserMenu from "@/components/UserMenu";
 import Link from "next/link";
 import { QRCodeCanvas } from "qrcode.react";
@@ -26,7 +27,8 @@ const CloseIcon = () => (
  * "Users" and "Sign In allowlist" tabs are gone.
  */
 export default function AdminPage() {
-    const { user, isAdmin } = useAuth();
+    const { user, can } = useAuth();
+    const canAdmin = can(CAP.CATALOGUE_MANAGE) || can(CAP.ITEMS_OVERRIDE);
     const router = useRouter();
     const { items } = useItems();
     const { categories } = useCategories();
@@ -62,10 +64,10 @@ export default function AdminPage() {
 
     // Server-side APIs enforce this too; the redirect is just UX.
     useEffect(() => {
-        if (!user || !isAdmin) router.replace("/");
-    }, [user, isAdmin, router]);
+        if (!user || !canAdmin) router.replace("/");
+    }, [user, canAdmin, router]);
 
-    if (!user || !isAdmin) {
+    if (!user || !canAdmin) {
         return null;
     }
 

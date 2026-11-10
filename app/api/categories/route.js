@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { requireAdmin } from "@/lib/auth/permissions";
+import { requireCapability } from "@/lib/auth/permissions";
+import { CAP } from "@/lib/auth/capabilities";
 import { errorResponse, badRequest } from "@/lib/apiErrors";
 import { slugify } from "@/lib/slug";
 
 // POST /api/categories — create a category (admins).
 export async function POST(request) {
-    const { error } = await requireAdmin();
+    const { error } = await requireCapability(CAP.CATALOGUE_MANAGE);
     if (error) return error;
 
     const body = await request.json().catch(() => ({}));

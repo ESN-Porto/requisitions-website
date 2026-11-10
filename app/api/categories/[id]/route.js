@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { requireAdmin } from "@/lib/auth/permissions";
+import { requireCapability } from "@/lib/auth/permissions";
+import { CAP } from "@/lib/auth/capabilities";
 import { errorResponse, badRequest } from "@/lib/apiErrors";
 import { isUuid } from "@/lib/ids";
 import { slugify } from "@/lib/slug";
@@ -10,7 +11,7 @@ import { slugify } from "@/lib/slug";
 export async function PATCH(request, { params }) {
     const { id } = await params;
     if (!isUuid(id)) return badRequest("Invalid category id");
-    const { error } = await requireAdmin();
+    const { error } = await requireCapability(CAP.CATALOGUE_MANAGE);
     if (error) return error;
 
     const body = await request.json().catch(() => ({}));
@@ -33,7 +34,7 @@ export async function PATCH(request, { params }) {
 export async function DELETE(_request, { params }) {
     const { id } = await params;
     if (!isUuid(id)) return badRequest("Invalid category id");
-    const { error } = await requireAdmin();
+    const { error } = await requireCapability(CAP.CATALOGUE_MANAGE);
     if (error) return error;
 
     const supabase = await createClient();

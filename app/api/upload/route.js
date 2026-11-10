@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/auth/permissions";
+import { requireCapability } from "@/lib/auth/permissions";
+import { CAP } from "@/lib/auth/capabilities";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { BUCKET } from "@/lib/storage";
 
@@ -24,7 +25,7 @@ function detectImageType(buffer) {
 // Admin-only. Writes to Supabase Storage with the service role: the bucket has
 // no write policy for regular users on purpose.
 export async function POST(request) {
-    const { error } = await requireAdmin();
+    const { error } = await requireCapability(CAP.CATALOGUE_MANAGE);
     if (error) return error;
 
     try {

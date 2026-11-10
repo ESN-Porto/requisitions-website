@@ -2,11 +2,13 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { CAP } from "@/lib/auth/capabilities";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 export default function UserMenu() {
-    const { user, userData, logout, isAdmin } = useAuth();
+    const { user, userData, logout, can } = useAuth();
+    const showAdmin = can(CAP.CATALOGUE_MANAGE) || can(CAP.ITEMS_OVERRIDE);
     const [showMenu, setShowMenu] = useState(false);
     const menuRef = useRef(null);
     const pathname = usePathname();
@@ -49,7 +51,7 @@ export default function UserMenu() {
                 )}
 
                 {/* Admin visual indicator badge */}
-                {isAdmin && (
+                {showAdmin && (
                     <div className="absolute -bottom-1 -right-1 bg-[var(--esn-cyan)] text-white p-[3px] rounded-full ring-2 ring-white shadow-sm flex items-center justify-center">
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" stroke="none">
                             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
@@ -63,11 +65,11 @@ export default function UserMenu() {
                     <div className="px-3 py-2.5 border-b border-[var(--border-subtle)] mb-1.5 flex flex-col items-start min-w-0">
                         <p className="text-[14px] font-medium text-[var(--text-primary)] truncate w-full">{userData?.name}</p>
                         <p className="text-[12px] text-[var(--text-muted)] truncate mt-0.5 w-full">{userData?.email || user.email}</p>
-                        {isAdmin && <span className="mt-1 text-[10px] font-semibold bg-[var(--esn-cyan)]/10 text-[var(--esn-cyan)] px-1.5 py-0.5 rounded uppercase tracking-wider">Admin</span>}
+                        {showAdmin && <span className="mt-1 text-[10px] font-semibold bg-[var(--esn-cyan)]/10 text-[var(--esn-cyan)] px-1.5 py-0.5 rounded uppercase tracking-wider">Admin</span>}
                     </div>
 
                     <div className="flex flex-col gap-0.5">
-                        {isAdmin && pathname !== "/admin" && (
+                        {showAdmin && pathname !== "/admin" && (
                             <Link
                                 href="/admin"
                                 onClick={() => setShowMenu(false)}

@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { requireAdmin } from "@/lib/auth/permissions";
+import { requireCapability } from "@/lib/auth/permissions";
+import { CAP } from "@/lib/auth/capabilities";
 import { errorResponse, badRequest } from "@/lib/apiErrors";
 import { isUuid } from "@/lib/ids";
 
 // POST /api/items — create an item (project admins; RLS enforces it too).
 export async function POST(request) {
-    const { user, error } = await requireAdmin();
+    const { user, error } = await requireCapability(CAP.CATALOGUE_MANAGE);
     if (error) return error;
 
     const body = await request.json().catch(() => ({}));

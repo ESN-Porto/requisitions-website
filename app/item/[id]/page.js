@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@/contexts/AuthContext";
+import { CAP } from "@/lib/auth/capabilities";
 import TransferModal, { Avatar } from "@/components/TransferModal";
 import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -8,7 +9,8 @@ import { useItem, useTransfers, useVolunteers, formatDate } from "@/lib/data";
 import { moveItem, adminMoveItem } from "@/lib/api";
 
 export default function ItemDetailPage() {
-    const { user, isAdmin } = useAuth();
+    const { user, can } = useAuth();
+    const canOverride = can(CAP.ITEMS_OVERRIDE);
     const params = useParams();
     const router = useRouter();
     const { item, loading: itemLoading } = useItem(params.id);
@@ -186,7 +188,7 @@ export default function ItemDetailPage() {
                     )}
 
                     {/* Admin actions */}
-                    {isAdmin && user && (
+                    {canOverride && user && (
                         <div className="border-t border-[var(--border-subtle)] px-4 sm:px-6 py-3.5 flex items-center gap-2.5">
                             <span className="text-[12px] font-medium text-[var(--text-muted)] uppercase tracking-wider mr-auto">Admin</span>
                             {!isInOffice && (

@@ -4,106 +4,66 @@ import { useAuth } from "@/contexts/AuthContext";
 import UserMenu from "@/components/UserMenu";
 import ItemCard from "@/components/ItemCard";
 import TransferModal from "@/components/TransferModal";
-import { useEffect, useState } from "react";
-import { collection, onSnapshot, query, orderBy, doc, updateDoc, addDoc, serverTimestamp } from "firebase/firestore";
-import { getFirebaseDb } from "@/lib/firebase";
+import { useState } from "react";
+import { useItems, useCategories } from "@/lib/data";
+import { moveItem } from "@/lib/api";
 
 export default function HomePage() {
-  const { user, userData } = useAuth();
-  const [items, setItems] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [itemsLoading, setItemsLoading] = useState(true);
+  const { user } = useAuth();
+  const { items, loading: itemsLoading } = useItems();
+  const { categories } = useCategories();
   const [filter, setFilter] = useState("all");
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [pendingAction, setPendingAction] = useState(null); // null | "returnAll" | "giveAll"
   const [eventName, setEventName] = useState("");
   const [note, setNote] = useState("");
-
-  useEffect(() => {
-    const q = query(collection(getFirebaseDb(), "items"), orderBy("name"));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const itemsData = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setItems(itemsData);
-      setItemsLoading(false);
-    });
-
-    const unsubCategories = onSnapshot(
-      query(collection(getFirebaseDb(), "categories"), orderBy("name")),
-      (snap) => setCategories(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
-    );
-
-    return () => { unsubscribe(); unsubCategories(); };
-  }, []);
+  const [actionError, setActionError] = useState(null);
 
   const filteredItems =
-    filter === "all" ? items : items.filter((item) => item.type === filter);
+    filter === "all" ? items : items.filter((item) => item.category_key === filter);
 
   const itemCounts = { all: items.length };
   categories.forEach((cat) => {
-    itemCounts[cat.key] = items.filter((i) => i.type === cat.key).length;
+    itemCounts[cat.key] = items.filter((i) => i.category_key === cat.key).length;
   });
 
-  const myItems = user ? items.filter((i) => i.currentHolder === user.uid) : [];
+  const myItems = user ? items.filter((i) => i.holder_id === user.id) : [];
 
-  const handleDeliverAll = async () => {
-    if (!user || myItems.length === 0 || actionLoading) return;
-    setActionLoading(true);
-    try {
-      for (const item of myItems) {
-        await updateDoc(doc(getFirebaseDb(), "items", item.id), {
-          status: "office",
-          currentHolder: null,
-          currentHolderName: null,
-          currentHolderPhoto: null,
-          updatedAt: serverTimestamp(),
-        });
-        await addDoc(collection(getFirebaseDb(), "transfers"), {
-          itemId: item.id, itemName: item.name, itemType: item.type,
-          fromUserId: user.uid, fromUserName: userData?.name || "Unknown",
-          toUserId: null, toUserName: "Office",
-          action: "return", eventName: eventName.trim() || null,
-          note: note.trim() || null,
-          timestamp: serverTimestamp(),
-        });
-      }
-      setEventName(""); setNote(""); setPendingAction(null);
-    } catch (e) {
-      console.error("Deliver all error:", e);
-    }
-    setActionLoading(false);
+  const resetForm = () => {
+    setEventName("");
+    setNote("");
+    setPendingAction(null);
+    setActionError(null);
   };
 
-  const handlePassAll = async (toUser) => {
+  const runForAll = async (fn) => {
     if (!user || myItems.length === 0 || actionLoading) return;
     setActionLoading(true);
-    try {
-      for (const item of myItems) {
-        await updateDoc(doc(getFirebaseDb(), "items", item.id), {
-          status: "out",
-          currentHolder: toUser.id,
-          currentHolderName: toUser.name,
-          currentHolderPhoto: toUser.photoURL || null,
-          updatedAt: serverTimestamp(),
-        });
-        await addDoc(collection(getFirebaseDb(), "transfers"), {
-          itemId: item.id, itemName: item.name, itemType: item.type,
-          fromUserId: user.uid, fromUserName: userData?.name || "Unknown",
-          toUserId: toUser.id, toUserName: toUser.name,
-          action: "transfer", eventName: eventName.trim() || null,
-          note: note.trim() || null,
-          timestamp: serverTimestamp(),
-        });
+    setActionError(null);
+    const failures = [];
+    for (const item of myItems) {
+      try {
+        await fn(item);
+      } catch (e) {
+        failures.push(`${item.name}: ${e.message}`);
       }
-      setEventName(""); setNote(""); setPendingAction(null);
-      setShowTransferModal(false);
-    } catch (e) {
-      console.error("Pass all error:", e);
     }
     setActionLoading(false);
+    if (failures.length > 0) {
+      setActionError(failures.join(" · "));
+      return false;
+    }
+    resetForm();
+    return true;
+  };
+
+  const handleDeliverAll = () =>
+    runForAll((item) => moveItem(item.id, "return", { eventName, note }));
+
+  const handlePassAll = async (toUser) => {
+    const ok = await runForAll((item) => moveItem(item.id, "pass", { toUserId: toUser.id, eventName, note }));
+    if (ok) setShowTransferModal(false);
   };
 
   const filterOptions = [
@@ -122,7 +82,7 @@ export default function HomePage() {
           <div>
             <h1 className="home-title">Requisitions</h1>
             <p className="home-subtitle">
-              {inOffice} in office{" \u00B7 "}{checkedOut} checked out
+              {inOffice} in office{" · "}{checkedOut} checked out
             </p>
           </div>
           <div className="mt-1">
@@ -145,18 +105,18 @@ export default function HomePage() {
                   </span>
                 ))}
               </div>
-              
+
               {!pendingAction ? (
                 <div className="flex gap-2">
-                  <button 
-                    onClick={() => setPendingAction("returnAll")} 
+                  <button
+                    onClick={() => setPendingAction("returnAll")}
                     disabled={actionLoading}
                     className="group flex-shrink-0 flex items-center justify-center gap-1.5 px-4 py-2 sm:py-1.5 bg-[var(--bg-secondary)] hover:bg-[#e8e8ed] text-[var(--text-secondary)] hover:text-[var(--text-primary)] rounded-full text-[13px] font-semibold transition-all cursor-pointer border border-transparent hover:border-[var(--border-color)] disabled:opacity-50"
                   >
                     Return to Office
                   </button>
-                  <button 
-                    onClick={() => setPendingAction("giveAll")} 
+                  <button
+                    onClick={() => setPendingAction("giveAll")}
                     disabled={actionLoading}
                     className="group flex-shrink-0 flex items-center justify-center gap-1.5 px-4 py-2 sm:py-1.5 bg-[var(--bg-secondary)] hover:bg-[#e8e8ed] text-[var(--text-secondary)] hover:text-[var(--text-primary)] rounded-full text-[13px] font-semibold transition-all cursor-pointer border border-transparent hover:border-[var(--border-color)] disabled:opacity-50"
                   >
@@ -195,6 +155,9 @@ export default function HomePage() {
                     />
                   </div>
                 </div>
+                {actionError && (
+                  <p className="text-[13px] text-[#ff3b30] mb-3">{actionError}</p>
+                )}
                 <div className="flex gap-2.5">
                   <button
                     onClick={
@@ -207,7 +170,7 @@ export default function HomePage() {
                     {actionLoading && <span className="ml-2 spinner !w-4 !h-4 !border-2"></span>}
                   </button>
                   <button
-                    onClick={() => { setPendingAction(null); setEventName(""); setNote(""); }}
+                    onClick={resetForm}
                     className="btn-action-secondary flex-[0.6]"
                     disabled={actionLoading}
                   >
@@ -274,7 +237,7 @@ export default function HomePage() {
         <TransferModal
           onClose={() => setShowTransferModal(false)}
           onTransfer={handlePassAll}
-          currentUserId={user?.uid}
+          currentUserId={user?.id}
         />
       )}
     </div>

@@ -1,6 +1,6 @@
 import { Inter } from "next/font/google";
 import { AuthProvider } from "@/contexts/AuthContext";
-import AuthGate from "@/components/AuthGate";
+import { getSessionContext } from "@/lib/auth/permissions";
 import "./globals.css";
 
 const inter = Inter({
@@ -18,16 +18,19 @@ export const metadata = {
     },
 };
 
-export default function RootLayout({ children }) {
+// Session lives in cookies → every render is per-request.
+export const dynamic = "force-dynamic";
+
+export default async function RootLayout({ children }) {
+    const session = await getSessionContext();
+
     return (
         <html lang="en" className={inter.variable} suppressHydrationWarning>
             <body
                 style={{ fontFamily: "var(--font-inter), system-ui, sans-serif" }}
                 suppressHydrationWarning
             >
-                <AuthProvider>
-                    <AuthGate>{children}</AuthGate>
-                </AuthProvider>
+                <AuthProvider initial={session}>{children}</AuthProvider>
             </body>
         </html>
     );

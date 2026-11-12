@@ -1,138 +1,75 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
-import { onAuthStateChanged, signInWithPopup, signOut } from "firebase/auth";
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
-import { getFirebaseAuth, googleProvider, getFirebaseDb } from "@/lib/firebase";
-
-const AUTO_ADMIN_EMAILS = [
-    "wpa@esnporto.org",
-    "office.team@esnporto.org",
-    "treasurer@esnporto.org",
-];
-
-const AuthContext = createContext({});
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 
 /**
- * Check if an email is allowed to create an account.
- * @esnporto.org emails are always allowed.
- * Other emails must be in the allowlist (unless allowAllEmails is true).
+ * Session context. The server root layout resolves the session once
+ * (Supabase Auth cookie → auth.users → requisitions_tracker.volunteers +
+ * my_capabilities()) and hands it down as `initial`. Access is decided by the
+ * proxy (middleware) before any page renders, so by the time a page mounts the
+ * user is a volunteer with access to this project.
+ *
+ * Shape kept close to the old Firebase context so pages read naturally:
+ *   user          → { id, email }
+ *   userData      → { id, name, email, photo_url, esn_role }
+ *   capabilities  → capability keys from my_capabilities() ([] when unknown)
+ *   can(key)      → whether `key` is in capabilities
+ *
+ * This only hides UI. The API routes and the database (RLS + RPCs) enforce
+ * the same keys.
  */
-async function isEmailAllowed(email) {
-    if (!email) return false;
-    const lower = email.toLowerCase();
+const AuthContext = createContext({
+    user: null,
+    userData: null,
+    capabilities: [],
+    can: () => false,
+    loading: false,
+    logout: async () => {},
+});
 
-    // @esnporto.org emails are always allowed
-    if (lower.endsWith("@esnporto.org")) return true;
+export function AuthProvider({ initial, children }) {
+    const router = useRouter();
+    const [session, setSession] = useState(initial);
 
-    try {
-        const settingsDoc = await getDoc(doc(getFirebaseDb(), "settings", "emailAllowlist"));
-        if (!settingsDoc.exists()) {
-            // If no settings doc exists yet, deny non-ESN emails by default
-            return false;
-        }
-        const data = settingsDoc.data();
-        if (data.allowAllEmails) return true;
-
-        const allowedEmails = (data.emails || []).map((e) => e.toLowerCase());
-        return allowedEmails.includes(lower);
-    } catch (error) {
-        console.error("Error checking email allowlist:", error);
-        return false;
-    }
-}
-
-export function AuthProvider({ children }) {
-    const [user, setUser] = useState(null);
-    const [userData, setUserData] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [authError, setAuthError] = useState(null);
-
+    // Keep in sync when the server re-renders the layout (router.refresh()).
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(getFirebaseAuth(), async (firebaseUser) => {
-            if (firebaseUser) {
-                const userDocRef = doc(getFirebaseDb(), "users", firebaseUser.uid);
-                const userDoc = await getDoc(userDocRef);
+        setSession(initial);
+    }, [initial]);
 
-                if (userDoc.exists()) {
-                    // Existing user — always let them in
-                    setUser(firebaseUser);
-                    setUserData({ id: firebaseUser.uid, ...userDoc.data() });
-                    setAuthError(null);
-                } else {
-                    // First login — check if email is allowed before creating profile
-                    const allowed = await isEmailAllowed(firebaseUser.email);
-
-                    if (!allowed) {
-                        // Not authorized — sign out and show error
-                        await signOut(getFirebaseAuth());
-                        setUser(null);
-                        setUserData(null);
-                        setAuthError(
-                            "Please use your ESN mailing list email to sign in. If you have problems, contact the IT manager."
-                        );
-                        setLoading(false);
-                        return;
-                    }
-
-                    // Allowed — create user profile
-                    const isAutoAdmin = AUTO_ADMIN_EMAILS.includes(
-                        firebaseUser.email?.toLowerCase()
-                    );
-
-                    const newUserData = {
-                        email: firebaseUser.email,
-                        name: firebaseUser.displayName,
-                        photoURL: firebaseUser.photoURL,
-                        role: isAutoAdmin ? "admin" : "member",
-                        createdAt: serverTimestamp(),
-                    };
-                    await setDoc(userDocRef, newUserData);
-                    setUser(firebaseUser);
-                    setUserData({ id: firebaseUser.uid, ...newUserData });
-                    setAuthError(null);
-                }
-            } else {
-                setUser(null);
-                setUserData(null);
+    // React to sign-outs triggered elsewhere (another tab, token revoked).
+    useEffect(() => {
+        const supabase = createClient();
+        const {
+            data: { subscription },
+        } = supabase.auth.onAuthStateChange((event) => {
+            if (event === "SIGNED_OUT") {
+                setSession({ user: null, profile: null, capabilities: [] });
+                router.refresh();
             }
-            setLoading(false);
         });
-        return () => unsubscribe();
-    }, []);
+        return () => subscription.unsubscribe();
+    }, [router]);
 
-    const signInWithGoogle = async () => {
-        try {
-            setAuthError(null);
-            await signInWithPopup(getFirebaseAuth(), googleProvider);
-        } catch (error) {
-            console.error("Sign in error:", error);
-        }
-    };
+    const value = useMemo(() => {
+        // Fail closed: anything but an array of keys means no capabilities.
+        const capabilities = Array.isArray(session?.capabilities) ? session.capabilities : [];
+        return {
+            user: session?.user ?? null,
+            userData: session?.profile ?? null,
+            capabilities,
+            can: (key) => capabilities.includes(key),
+            loading: false,
+            logout: async () => {
+                await createClient().auth.signOut();
+                router.push("/login");
+                router.refresh();
+            },
+        };
+    }, [session, router]);
 
-    const logout = async () => {
-        try {
-            await signOut(getFirebaseAuth());
-        } catch (error) {
-            console.error("Sign out error:", error);
-        }
-    };
-
-    return (
-        <AuthContext.Provider
-            value={{
-                user,
-                userData,
-                loading,
-                authError,
-                signInWithGoogle,
-                logout,
-                isAdmin: userData?.role === "admin",
-            }}
-        >
-            {children}
-        </AuthContext.Provider>
-    );
+    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export const useAuth = () => useContext(AuthContext);

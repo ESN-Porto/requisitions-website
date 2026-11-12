@@ -1,33 +1,21 @@
 "use client";
 
 import { useAuth } from "@/contexts/AuthContext";
-import TransferModal from "@/components/TransferModal";
-import { useEffect, useState } from "react";
+import { CAP } from "@/lib/auth/capabilities";
+import TransferModal, { Avatar } from "@/components/TransferModal";
+import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import {
-    doc,
-    updateDoc,
-    addDoc,
-    collection,
-    query,
-    where,
-    orderBy,
-    onSnapshot,
-    getDocs,
-    serverTimestamp,
-} from "firebase/firestore";
-import { getFirebaseDb } from "@/lib/firebase";
+import { useItem, useTransfers, useVolunteers, formatDate } from "@/lib/data";
+import { moveItem, adminMoveItem } from "@/lib/api";
 
 export default function ItemDetailPage() {
-    const { user, userData, loading, signInWithGoogle, isAdmin } = useAuth();
+    const { user, can } = useAuth();
+    const canOverride = can(CAP.ITEMS_OVERRIDE);
     const params = useParams();
     const router = useRouter();
-    const [item, setItem] = useState(null);
-    const [transfers, setTransfers] = useState([]);
-    const [categories, setCategories] = useState([]);
-    const [usersMap, setUsersMap] = useState({});
-    const [itemLoading, setItemLoading] = useState(true);
-    const [transfersLoading, setTransfersLoading] = useState(true);
+    const { item, loading: itemLoading } = useItem(params.id);
+    const { transfers, loading: transfersLoading } = useTransfers(item?.id);
+    const { byId: volunteersById } = useVolunteers();
     const [showTransferModal, setShowTransferModal] = useState(false);
     const [actionLoading, setActionLoading] = useState(false);
     const [eventName, setEventName] = useState("");
@@ -36,176 +24,57 @@ export default function ItemDetailPage() {
     const [showAdminTransferModal, setShowAdminTransferModal] = useState(false);
     const [pendingAction, setPendingAction] = useState(null); // null | "pickup" | "return" | "pass"
     const [visibleCount, setVisibleCount] = useState(10);
+    const [error, setError] = useState(null);
 
-    useEffect(() => {
-        if (!params.id) return;
-
-        // Fetch all users for photo lookup
-        getDocs(collection(getFirebaseDb(), "users")).then((snap) => {
-            const map = {};
-            snap.docs.forEach((d) => {
-                map[d.id] = d.data();
-            });
-            setUsersMap(map);
-        });
-
-        const unsubItem = onSnapshot(doc(getFirebaseDb(), "items", params.id), (docSnap) => {
-            if (docSnap.exists()) {
-                setItem({ id: docSnap.id, ...docSnap.data() });
-            }
-            setItemLoading(false);
-        });
-
-        const q = query(
-            collection(getFirebaseDb(), "transfers"),
-            where("itemId", "==", params.id)
-        );
-        const unsubTransfers = onSnapshot(q, (snapshot) => {
-            const docs = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
-            docs.sort((a, b) => {
-                const ta = a.timestamp?.toMillis?.() || 0;
-                const tb = b.timestamp?.toMillis?.() || 0;
-                return tb - ta;
-            });
-            setTransfers(docs);
-            setTransfersLoading(false);
-        });
-
-        const unsubCategories = onSnapshot(
-            query(collection(getFirebaseDb(), "categories"), orderBy("name")),
-            (snap) => setCategories(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
-        );
-
-        return () => {
-            unsubItem();
-            unsubTransfers();
-            unsubCategories();
-        };
-    }, [params.id]);
-
-    const handlePickup = async () => {
-        if (!user || !item || actionLoading) return;
-        setActionLoading(true);
-        try {
-            await updateDoc(doc(getFirebaseDb(), "items", item.id), {
-                status: "out",
-                currentHolder: user.uid,
-                currentHolderName: userData.name,
-                currentHolderPhoto: userData.photoURL || null,
-                updatedAt: serverTimestamp(),
-            });
-            await addDoc(collection(getFirebaseDb(), "transfers"), {
-                itemId: item.id, itemName: item.name, itemType: item.type,
-                fromUserId: null, fromUserName: "Office",
-                toUserId: user.uid, toUserName: userData.name,
-                action: "pickup", eventName: eventName.trim(),
-                note: note.trim() || null,
-                timestamp: serverTimestamp(),
-            });
-            setEventName(""); setNote(""); setPendingAction(null);
-        } catch (e) { console.error("Pickup error:", e); }
-        setActionLoading(false);
+    const resetForm = () => {
+        setEventName("");
+        setNote("");
+        setPendingAction(null);
     };
 
-    const handleReturn = async () => {
-        if (!user || !item || actionLoading) return;
+    const run = async (action, extra = {}) => {
+        if (!user || !item || actionLoading) return false;
         setActionLoading(true);
+        setError(null);
         try {
-            await updateDoc(doc(getFirebaseDb(), "items", item.id), {
-                status: "office",
-                currentHolder: null,
-                currentHolderName: null,
-                currentHolderPhoto: null,
-                updatedAt: serverTimestamp(),
-            });
-            await addDoc(collection(getFirebaseDb(), "transfers"), {
-                itemId: item.id, itemName: item.name, itemType: item.type,
-                fromUserId: user.uid, fromUserName: userData.name,
-                toUserId: null, toUserName: "Office",
-                action: "return", eventName: eventName.trim() || null,
-                note: note.trim() || null,
-                timestamp: serverTimestamp(),
-            });
-            setEventName(""); setNote(""); setPendingAction(null);
-        } catch (e) { console.error("Return error:", e); }
-        setActionLoading(false);
+            await moveItem(item.id, action, { eventName, note, ...extra });
+            resetForm();
+            return true;
+        } catch (e) {
+            setError(e.message);
+            return false;
+        } finally {
+            setActionLoading(false);
+        }
     };
 
+    const handlePickup = () => run("pickup");
+    const handleReturn = () => run("return");
     const handleTransfer = async (toUser) => {
-        if (!user || !item || actionLoading) return;
-        setActionLoading(true);
-        try {
-            await updateDoc(doc(getFirebaseDb(), "items", item.id), {
-                status: "out",
-                currentHolder: toUser.id,
-                currentHolderName: toUser.name,
-                currentHolderPhoto: toUser.photoURL || null,
-                updatedAt: serverTimestamp(),
-            });
-            await addDoc(collection(getFirebaseDb(), "transfers"), {
-                itemId: item.id, itemName: item.name, itemType: item.type,
-                fromUserId: user.uid, fromUserName: userData.name,
-                toUserId: toUser.id, toUserName: toUser.name,
-                action: "transfer", eventName: eventName.trim() || null,
-                note: note.trim() || null,
-                timestamp: serverTimestamp(),
-            });
-            setEventName(""); setNote(""); setPendingAction(null);
-            setShowTransferModal(false);
-        } catch (e) { console.error("Transfer error:", e); }
-        setActionLoading(false);
+        if (await run("pass", { toUserId: toUser.id })) setShowTransferModal(false);
     };
 
-    const handleAdminReturn = async () => {
-        if (!item || adminOverrideLoading) return;
+    const runAdmin = async (action, extra = {}) => {
+        if (!item || adminOverrideLoading) return false;
         setAdminOverrideLoading(true);
+        setError(null);
         try {
-            await updateDoc(doc(getFirebaseDb(), "items", item.id), {
-                status: "office",
-                currentHolder: null,
-                currentHolderName: null,
-                currentHolderPhoto: null,
-                updatedAt: serverTimestamp(),
-            });
-            await addDoc(collection(getFirebaseDb(), "transfers"), {
-                itemId: item.id, itemName: item.name, itemType: item.type,
-                fromUserId: item.currentHolder || null, fromUserName: item.currentHolderName || "Unknown",
-                toUserId: null, toUserName: "Office",
-                action: "return", eventName: null,
-                adminOverride: true,
-                timestamp: serverTimestamp(),
-            });
-        } catch (e) { console.error("Admin return error:", e); }
-        setAdminOverrideLoading(false);
+            await adminMoveItem(item.id, action, extra);
+            return true;
+        } catch (e) {
+            setError(e.message);
+            return false;
+        } finally {
+            setAdminOverrideLoading(false);
+        }
     };
 
+    const handleAdminReturn = () => runAdmin("return");
     const handleAdminAssign = async (toUser) => {
-        if (!item || adminOverrideLoading) return;
-        setAdminOverrideLoading(true);
-        try {
-            await updateDoc(doc(getFirebaseDb(), "items", item.id), {
-                status: "out",
-                currentHolder: toUser.id,
-                currentHolderName: toUser.name,
-                currentHolderPhoto: toUser.photoURL || null,
-                updatedAt: serverTimestamp(),
-            });
-            await addDoc(collection(getFirebaseDb(), "transfers"), {
-                itemId: item.id, itemName: item.name, itemType: item.type,
-                fromUserId: item.currentHolder || null,
-                fromUserName: item.status === "office" ? "Office" : (item.currentHolderName || "Unknown"),
-                toUserId: toUser.id, toUserName: toUser.name,
-                action: item.status === "office" ? "pickup" : "transfer",
-                eventName: null,
-                adminOverride: true,
-                timestamp: serverTimestamp(),
-            });
-            setShowAdminTransferModal(false);
-        } catch (e) { console.error("Admin assign error:", e); }
-        setAdminOverrideLoading(false);
+        if (await runAdmin("assign", { toUserId: toUser.id })) setShowAdminTransferModal(false);
     };
 
-    if (loading || itemLoading) {
+    if (itemLoading) {
         return (
             <div className="min-h-screen">
                 <main className="max-w-2xl mx-auto px-4 sm:px-8 py-5 sm:py-8 animate-pulse mt-4">
@@ -232,26 +101,10 @@ export default function ItemDetailPage() {
     }
 
     const isInOffice = item.status === "office";
-    const isCurrentHolder = user ? item.currentHolder === user.uid : false;
-    const holderPhoto = item.currentHolderPhoto || usersMap[item.currentHolder]?.photoURL;
-    const cat = categories.find((c) => c.key === item.type);
-    const badgeStyle = cat
-        ? { background: cat.bgColor, color: cat.color, border: `1px solid ${cat.borderColor}` }
-        : undefined;
+    const isCurrentHolder = user ? item.holder_id === user.id : false;
+    const holderPhoto = item.holder_photo_url || volunteersById[item.holder_id]?.photo_url;
 
-    const formatDate = (timestamp) => {
-        if (!timestamp) return "";
-        const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-        return date.toLocaleDateString("en-GB", {
-            day: "numeric", month: "short", year: "numeric",
-            hour: "2-digit", minute: "2-digit",
-        });
-    };
-
-    const getUserPhoto = (userId) => {
-        if (!userId) return null;
-        return usersMap[userId]?.photoURL || null;
-    };
+    const getUserPhoto = (userId) => (userId ? volunteersById[userId]?.photo_url || null : null);
 
     const getTimelineLabel = (transfer) => {
         switch (transfer.action) {
@@ -278,8 +131,8 @@ export default function ItemDetailPage() {
 
                 {/* Hero Image */}
                 <div className="item-hero">
-                    {item.photoURL ? (
-                        <img src={item.photoURL} alt={item.name} />
+                    {item.photo_url ? (
+                        <img src={item.photo_url} alt={item.name} />
                     ) : (
                         <div className="item-hero-placeholder">
                             {"\u{1F4E6}"}
@@ -290,6 +143,9 @@ export default function ItemDetailPage() {
                 {/* Title — centered below hero */}
                 <div className="text-center mb-5 sm:mb-6">
                     <h1 className="text-[22px] sm:text-[26px] font-bold tracking-tight leading-tight">{item.name}</h1>
+                    {item.category_name && (
+                        <p className="text-[13px] text-[var(--text-muted)] mt-1">{item.category_name}</p>
+                    )}
                 </div>
 
                 {/* Status card */}
@@ -311,37 +167,28 @@ export default function ItemDetailPage() {
                             </>
                         ) : (
                             <>
-                                {holderPhoto ? (
-                                    <img src={holderPhoto} alt={item.currentHolderName} className="w-10 h-10 rounded-full ring-1 ring-black/5 flex-shrink-0" referrerPolicy="no-referrer" />
-                                ) : (
-                                    <div className="w-10 h-10 rounded-full bg-[var(--bg-secondary)] flex items-center justify-center text-sm font-semibold text-[var(--text-secondary)] flex-shrink-0">
-                                        {item.currentHolderName?.[0]}
-                                    </div>
-                                )}
+                                <Avatar name={item.holder_name} src={holderPhoto} className="w-10 h-10" />
                                 <div>
                                     <p className="text-[13px] text-[var(--text-muted)]">Currently with</p>
-                                    <p className="font-semibold text-[15px]">{item.currentHolderName || "Unknown"}</p>
+                                    <p className="font-semibold text-[15px]">{item.holder_name || "Unknown"}</p>
                                 </div>
                             </>
                         )}
                     </div>
 
-                    {/* Not logged in message */}
-                    {isInOffice && !user && (
-                        <div className="px-4 sm:px-6 pb-5 text-[14px] text-[var(--text-muted)]">
-                            <button onClick={signInWithGoogle} className="font-medium text-[var(--text-primary)] underline">Sign in</button> to pick up this item.
-                        </div>
-                    )}
-
                     {/* Non-holder message */}
                     {!isInOffice && !isCurrentHolder && (
                         <div className="px-4 sm:px-6 pb-4 text-[13px] text-[var(--text-muted)]">
-                            Only <span className="font-medium text-[var(--text-secondary)]">{item.currentHolderName}</span> can return or transfer this item.
+                            Only <span className="font-medium text-[var(--text-secondary)]">{item.holder_name || "the current holder"}</span> can return or transfer this item.
                         </div>
                     )}
 
+                    {error && (
+                        <div className="px-4 sm:px-6 pb-4 text-[13px] text-[#ff3b30]">{error}</div>
+                    )}
+
                     {/* Admin actions */}
-                    {isAdmin && user && (
+                    {canOverride && user && (
                         <div className="border-t border-[var(--border-subtle)] px-4 sm:px-6 py-3.5 flex items-center gap-2.5">
                             <span className="text-[12px] font-medium text-[var(--text-muted)] uppercase tracking-wider mr-auto">Admin</span>
                             {!isInOffice && (
@@ -388,79 +235,57 @@ export default function ItemDetailPage() {
                         </div>
                     ) : (
                         <div className="card overflow-hidden">
-                            {transfers.slice(0, visibleCount).map((transfer, index, arr) => (
-                                <div
-                                    key={transfer.id}
-                                    className={`flex items-start gap-3 p-4 sm:p-5 ${index !== arr.length - 1 ? "border-b border-[var(--border-subtle)]" : ""
-                                        }`}
-                                >
-                                    {/* User avatar */}
-                                    {transfer.action === "transfer" ? (
-                                        <div className="flex -space-x-2 flex-shrink-0">
-                                            {getUserPhoto(transfer.fromUserId) ? (
-                                                <img src={getUserPhoto(transfer.fromUserId)} alt="" className="w-8 h-8 rounded-full ring-2 ring-white" referrerPolicy="no-referrer" />
-                                            ) : (
-                                                <div className="w-8 h-8 rounded-full bg-[var(--bg-secondary)] ring-2 ring-white flex items-center justify-center text-xs font-semibold text-[var(--text-muted)]">
-                                                    {transfer.fromUserName?.[0]}
-                                                </div>
-                                            )}
-                                            {getUserPhoto(transfer.toUserId) ? (
-                                                <img src={getUserPhoto(transfer.toUserId)} alt="" className="w-8 h-8 rounded-full ring-2 ring-white" referrerPolicy="no-referrer" />
-                                            ) : (
-                                                <div className="w-8 h-8 rounded-full bg-[var(--bg-secondary)] ring-2 ring-white flex items-center justify-center text-xs font-semibold text-[var(--text-muted)]">
-                                                    {transfer.toUserName?.[0]}
-                                                </div>
-                                            )}
-                                        </div>
-                                    ) : (
-                                        (() => {
-                                            const userId = transfer.action === "pickup" ? transfer.toUserId : transfer.fromUserId;
-                                            const userName = transfer.action === "pickup" ? transfer.toUserName : transfer.fromUserName;
-                                            const photo = getUserPhoto(userId);
-                                            return photo ? (
-                                                <img src={photo} alt="" className="w-8 h-8 rounded-full ring-1 ring-black/5 flex-shrink-0" referrerPolicy="no-referrer" />
-                                            ) : (
-                                                <div className="w-8 h-8 rounded-full bg-[var(--bg-secondary)] flex items-center justify-center text-xs font-semibold text-[var(--text-muted)] flex-shrink-0">
-                                                    {userName?.[0]}
-                                                </div>
-                                            );
-                                        })()
-                                    )}
+                            {transfers.slice(0, visibleCount).map((transfer, index, arr) => {
+                                const actorId = transfer.action === "pickup" ? transfer.to_user_id : transfer.from_user_id;
+                                const actorName = transfer.action === "pickup" ? transfer.to_user_name : transfer.from_user_name;
+                                return (
+                                    <div
+                                        key={transfer.id}
+                                        className={`flex items-start gap-3 p-4 sm:p-5 ${index !== arr.length - 1 ? "border-b border-[var(--border-subtle)]" : ""}`}
+                                    >
+                                        {/* User avatar */}
+                                        {transfer.action === "transfer" ? (
+                                            <div className="flex -space-x-2 flex-shrink-0">
+                                                <Avatar name={transfer.from_user_name} src={getUserPhoto(transfer.from_user_id)} className="w-8 h-8 ring-2 ring-white" textClass="text-xs" />
+                                                <Avatar name={transfer.to_user_name} src={getUserPhoto(transfer.to_user_id)} className="w-8 h-8 ring-2 ring-white" textClass="text-xs" />
+                                            </div>
+                                        ) : (
+                                            <Avatar name={actorName} src={getUserPhoto(actorId)} className="w-8 h-8" textClass="text-xs" />
+                                        )}
 
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-[14px] text-[var(--text-primary)] leading-snug">
-                                            {transfer.action === "transfer" ? (
-                                                <>
-                                                    <span className="font-semibold">{transfer.fromUserName}</span>
-                                                    {" \u2192 "}
-                                                    <span className="font-semibold">{transfer.toUserName}</span>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <span className="font-semibold">
-                                                        {transfer.action === "pickup" ? transfer.toUserName : transfer.fromUserName}
-                                                    </span>{" "}
-                                                    <span className="text-[var(--text-secondary)]">{getTimelineLabel(transfer)}</span>
-                                                </>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-[14px] text-[var(--text-primary)] leading-snug">
+                                                {transfer.action === "transfer" ? (
+                                                    <>
+                                                        <span className="font-semibold">{transfer.from_user_name}</span>
+                                                        {" → "}
+                                                        <span className="font-semibold">{transfer.to_user_name}</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <span className="font-semibold">{actorName}</span>{" "}
+                                                        <span className="text-[var(--text-secondary)]">{getTimelineLabel(transfer)}</span>
+                                                    </>
+                                                )}
+                                            </p>
+                                            {transfer.event_name && (
+                                                <p className="text-[12px] mt-1 text-[var(--esn-magenta)] font-medium">{transfer.event_name}</p>
                                             )}
-                                        </p>
-                                        {transfer.eventName && (
-                                            <p className="text-[12px] mt-1 text-[var(--esn-magenta)] font-medium">{transfer.eventName}</p>
-                                        )}
-                                        {transfer.note && (
-                                            <p className="text-[12px] mt-0.5 text-[var(--text-muted)] italic">{transfer.note}</p>
-                                        )}
-                                        <div className="flex items-center gap-2 mt-1">
-                                            <p className="text-[12px] text-[var(--text-muted)]">{formatDate(transfer.timestamp)}</p>
-                                            {transfer.adminOverride && (
-                                                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded" style={{ background: "#fffbeb", color: "#b45309", border: "1px solid #fde68a" }}>
-                                                    admin override
-                                                </span>
+                                            {transfer.note && (
+                                                <p className="text-[12px] mt-0.5 text-[var(--text-muted)] italic">{transfer.note}</p>
                                             )}
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <p className="text-[12px] text-[var(--text-muted)]">{formatDate(transfer.created_at)}</p>
+                                                {transfer.admin_override && (
+                                                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded" style={{ background: "#fffbeb", color: "#b45309", border: "1px solid #fde68a" }}>
+                                                        admin override
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                             {visibleCount < transfers.length && (
                                 <button
                                     onClick={() => setVisibleCount((n) => n + 10)}
@@ -523,7 +348,7 @@ export default function ItemDetailPage() {
                                         {actionLoading && <span className="ml-2 spinner !w-4 !h-4 !border-2"></span>}
                                     </button>
                                     <button
-                                        onClick={() => { setPendingAction(null); setEventName(""); setNote(""); }}
+                                        onClick={resetForm}
                                         className="btn-action-secondary flex-[0.6]"
                                         disabled={actionLoading}
                                     >
@@ -562,14 +387,15 @@ export default function ItemDetailPage() {
                 <TransferModal
                     onClose={() => setShowTransferModal(false)}
                     onTransfer={handleTransfer}
-                    currentUserId={user?.uid}
+                    currentUserId={user?.id}
                 />
             )}
             {showAdminTransferModal && (
                 <TransferModal
+                    title={isInOffice ? "Assign to someone" : "Reassign to someone"}
                     onClose={() => setShowAdminTransferModal(false)}
                     onTransfer={handleAdminAssign}
-                    currentUserId={null}
+                    currentUserId={item.holder_id}
                 />
             )}
         </div>

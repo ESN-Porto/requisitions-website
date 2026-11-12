@@ -1,38 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { collection, query, orderBy, getDocs } from "firebase/firestore";
-import { getFirebaseDb } from "@/lib/firebase";
+import { useState } from "react";
+import { useVolunteers } from "@/lib/data";
 
-export default function TransferModal({ onClose, onTransfer, currentUserId }) {
-    const [users, setUsers] = useState([]);
+/**
+ * Pick a volunteer to hand an item to. The list is the ESN volunteer roster
+ * from IT Manager (requisitions_tracker.volunteers), not app-local users.
+ */
+export default function TransferModal({ onClose, onTransfer, currentUserId, title = "Pass to someone" }) {
+    const { volunteers, loading } = useVolunteers();
     const [search, setSearch] = useState("");
-    const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchUsers = async () => {
-            const q = query(collection(getFirebaseDb(), "users"), orderBy("name"));
-            const snapshot = await getDocs(q);
-            const usersData = snapshot.docs
-                .map((doc) => ({ id: doc.id, ...doc.data() }))
-                .filter((u) => u.id !== currentUserId);
-            setUsers(usersData);
-            setLoading(false);
-        };
-        fetchUsers();
-    }, [currentUserId]);
-
-    const filteredUsers = users.filter(
-        (u) =>
-            u.name?.toLowerCase().includes(search.toLowerCase()) ||
-            u.email?.toLowerCase().includes(search.toLowerCase())
-    );
+    const needle = search.trim().toLowerCase();
+    const filtered = volunteers
+        .filter((v) => v.id !== currentUserId)
+        .filter((v) => !needle || v.name?.toLowerCase().includes(needle) || v.email?.toLowerCase().includes(needle));
 
     return (
         <div className="modal-overlay" onClick={onClose}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()}>
                 <div className="flex items-center justify-between mb-5">
-                    <h2 className="text-lg font-semibold">Pass to someone</h2>
+                    <h2 className="text-lg font-semibold">{title}</h2>
                     <button
                         onClick={onClose}
                         className="p-1.5 rounded-lg hover:bg-[var(--bg-secondary)] transition-colors text-[var(--text-muted)] hover:text-[var(--text-primary)]"
@@ -50,6 +38,7 @@ export default function TransferModal({ onClose, onTransfer, currentUserId }) {
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     className="input-field mb-4"
+                    autoFocus
                 />
 
                 <div className="max-h-64 overflow-y-auto -mx-2 px-2">
@@ -65,26 +54,20 @@ export default function TransferModal({ onClose, onTransfer, currentUserId }) {
                                 </div>
                             ))}
                         </div>
-                    ) : filteredUsers.length === 0 ? (
-                        <p className="text-center text-sm text-[var(--text-muted)] py-8">No members found</p>
+                    ) : filtered.length === 0 ? (
+                        <p className="text-center text-sm text-[var(--text-muted)] py-8">No volunteers found</p>
                     ) : (
                         <div className="space-y-1">
-                            {filteredUsers.map((u) => (
+                            {filtered.map((v) => (
                                 <button
-                                    key={u.id}
-                                    onClick={() => onTransfer(u)}
+                                    key={v.id}
+                                    onClick={() => onTransfer(v)}
                                     className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-[var(--bg-secondary)] transition-colors text-left"
                                 >
-                                    {u.photoURL ? (
-                                        <img src={u.photoURL} alt={u.name} className="w-9 h-9 rounded-full ring-1 ring-black/5" referrerPolicy="no-referrer" />
-                                    ) : (
-                                        <div className="w-9 h-9 rounded-full bg-[var(--bg-secondary)] flex items-center justify-center text-sm font-semibold text-[var(--text-secondary)]">
-                                            {u.name?.[0]}
-                                        </div>
-                                    )}
-                                    <div>
-                                        <p className="text-sm font-medium text-[var(--text-primary)]">{u.name}</p>
-                                        <p className="text-xs text-[var(--text-muted)]">{u.email}</p>
+                                    <Avatar name={v.name} src={v.photo_url} />
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-medium text-[var(--text-primary)] truncate">{v.name}</p>
+                                        <p className="text-xs text-[var(--text-muted)] truncate">{v.email}</p>
                                     </div>
                                 </button>
                             ))}
@@ -92,6 +75,17 @@ export default function TransferModal({ onClose, onTransfer, currentUserId }) {
                     )}
                 </div>
             </div>
+        </div>
+    );
+}
+
+export function Avatar({ name, src, className = "w-9 h-9", textClass = "text-sm" }) {
+    if (src) {
+        return <img src={src} alt={name || ""} className={`${className} rounded-full ring-1 ring-black/5 object-cover flex-shrink-0`} referrerPolicy="no-referrer" />;
+    }
+    return (
+        <div className={`${className} rounded-full bg-[var(--bg-secondary)] flex items-center justify-center ${textClass} font-semibold text-[var(--text-secondary)] flex-shrink-0`}>
+            {name?.trim()?.[0]?.toUpperCase() || "?"}
         </div>
     );
 }

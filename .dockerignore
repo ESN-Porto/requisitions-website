@@ -1,0 +1,27 @@
+# .env holds SUPABASE_SERVICE_ROLE_KEY (and the legacy Firebase service
+# account). Without this file `COPY . .` would bake it into the builder layers.
+# The NEXT_PUBLIC_* values the build needs come in as ARGs (see Dockerfile).
+.env
+.env.*
+!.env.example
+
+# Dependencies / build output (rebuilt inside the image)
+node_modules
+.next
+out
+scripts/firestore-migration/node_modules
+
+# VCS and tooling
+.git
+.github
+.gitignore
+Dockerfile
+.dockerignore
+digest.txt
+*.log
+
+# Legacy local photo uploads (photos now live in Supabase Storage) and docs
+public/uploads
+readme_imgs
+docs
+*.md

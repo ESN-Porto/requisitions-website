@@ -8,8 +8,9 @@ tags: [app, supabase, spec, intern, access]
 > task #21 / [[permissions-spec]]. App page: [[requisitions]].
 >
 > **Pre-chewed work:** branch `intern/requisitions-schema-foundation` in
-> `ESNPorto/requisitions-website` (local only, not pushed) contains a ready, tested
+> `ESN-Porto/requisitions-website` (pushed to origin) contains a ready, tested
 > migration. Your job is to review it, prove it, wire one vertical slice, and document.
+> Results: see §12.
 
 ## 1. Problem
 
@@ -200,6 +201,28 @@ PASS**; extra check: project `is_active=false` ⇒ volunteer sees 0 items.
 4. Item delete: hard delete (current) or soft delete (`archived_at`)? Audit keeps the old row either way.
 5. Is there a staging Supabase for task 6, or should the intern use the local CLI stack?
 6. Push the branches to `ESNPorto/requisitions-website` now?
+
+## 12. Results (2026-11-11)
+
+Counts only; no names, e-mails or ids are recorded here.
+
+**Test environment:** tasks 5 and 6 ran against the shared Supabase, with the manager's
+explicit OK (2026-11-10): Requisitions production is still Firebase and the
+`requisitions_tracker` schema was empty and unused, so testing there is allowed until
+cutover.
+
+| # | Result |
+|---|---|
+| 0 | Verified: my ESN account has Requisitions admin through IT Manager. |
+| 2 | Firestore dry run (no writes): 65 users, 5 categories, 10 items, 347 transfers. 43 users match a Supabase account by e-mail, 22 don't (5 shared role mailboxes, 17 people using another e-mail). 1 item is out with an unmatched holder; 13 transfers point to a deleted item; 0 items with an unknown category; 10/10 photos not found locally (they live with the old app). |
+| 3 | 38/38 PASS (unchanged). Migration `20261107120000` applied to the shared Supabase on 2026-11-11 with the manager's OK (schema was empty). Checked: 8 capabilities, 11 RLS policies, `my_capabilities()` executable by `authenticated` only, `capability_check()` not executable by clients. |
+| 4 | Done in commit `4920c66`. |
+| 5 | App run locally against the shared Supabase (anon key only): anon → `/login` and `POST /api/items` → 401; student → `/no-access`; volunteer → no admin UI, `/admin` → `/`; admin → full admin UI. |
+| 6 | Admin created a test category and item; volunteer picked up, returned, picked up again; admin force-returned (history shows "admin override"). UX note: the override row shows the holder's name, not the admin who performed it (`performed_by` is stored but not displayed). Test rows and the test account will be removed before cutover. |
+| 7 | Manager decisions: migrate only categories and items, do not map people one by one; Requisitions admins come from IT Manager. |
+
+**Still open:** whether to import transfer history (names only); where the 10 item photos
+are stored.
 
 ## Links
 
